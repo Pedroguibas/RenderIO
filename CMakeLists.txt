@@ -23,7 +23,7 @@ add_library(glad
 	external/glad/src/gl.c
 )
 
-target_include_directories(glad PUBLIC
+target_include_directories(glad SYSTEM PUBLIC
 	external/glad/include
 )
 
@@ -31,6 +31,7 @@ add_executable(renderIO
 	main.cpp
 	src/Vertex.cpp
 	src/Shader.cpp
+	src/Mesh.cpp
 )
 
 target_include_directories(renderIO PRIVATE

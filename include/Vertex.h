@@ -39,4 +39,8 @@ class Vertex {
     static vector<float> flatten(const vector<Vertex> &vertexes);
 
     vector<float> flatten();
+
+    bool hasColor() const;
+    bool hasUv() const;
+    bool hasNormal() const;
 };

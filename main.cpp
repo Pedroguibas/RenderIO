@@ -8,6 +8,7 @@
 
 #include "Vertex.h"
 #include "Shader.h"
+#include "Mesh.h"
 using std::cout;
 using std::nullopt;
 using std::vector;
@@ -53,14 +54,6 @@ int main() {
 
   glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
 
-  GLuint VAO;
-  glGenVertexArrays(1, &VAO);
-  glBindVertexArray(VAO);
-
-  GLuint VBO;
-  glGenBuffers(1, &VBO);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
   Vertex v1(
     glm::vec3(0.0f, 0.5f, -0.1f),
     glm::vec4(1.0f, 0.0f, 0.0f, 1.0f),
@@ -81,23 +74,11 @@ int main() {
   );
 
   vector<Vertex> vec{v1, v2, v3};
+  vector<unsigned int> indices{1, 2, 3};
 
   vector<float> vertexes = Vertex::flatten(vec);
 
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void *)0);
-  glEnableVertexAttribArray(0);
-
-  glVertexAttribPointer(
-    1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void *)(3 * sizeof(float))
-  );
-  glEnableVertexAttribArray(1);
-
-  glBufferData(
-    GL_ARRAY_BUFFER,
-    vertexes.size() * sizeof(float),
-    vertexes.data(),
-    GL_STATIC_DRAW
-  );
+  Mesh triangle(vec, indices);
 
   Shader *shader;
   try {
@@ -112,9 +93,7 @@ int main() {
 
     shader->use();
 
-    glBindVertexArray(VAO);
-
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    triangle.draw();
 
     glfwSwapBuffers(window);
 
@@ -122,8 +101,6 @@ int main() {
   }
 
   delete shader;
-  glDeleteVertexArrays(1, &VAO);
-  glDeleteBuffers(1, &VBO);
   glfwDestroyWindow(window);
   glfwTerminate();
 
