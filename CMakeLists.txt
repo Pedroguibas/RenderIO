@@ -30,6 +30,7 @@ target_include_directories(glad PUBLIC
 add_executable(renderIO
 	main.cpp
 	src/Vertex.cpp
+	src/Shader.cpp
 )
 
 target_include_directories(renderIO PRIVATE

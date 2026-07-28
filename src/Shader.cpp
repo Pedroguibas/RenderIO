@@ -1,0 +1,139 @@
+#include "Shader.h"
+#include <stdexcept>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <filesystem>
+#include <glm/gtc/type_ptr.hpp>
+
+Shader::Shader(const string &vert, const string &frag) {
+
+  string vertSrc = Shader::readFile(vert);
+  string fragSrc = Shader::readFile(frag);
+
+  GLuint vertShader = Shader::compileShader(GL_VERTEX_SHADER, vertSrc.c_str());
+  GLuint fragShader =
+    Shader::compileShader(GL_FRAGMENT_SHADER, fragSrc.c_str());
+
+  id = Shader::linkProgram(vertShader, fragShader);
+
+  glDeleteShader(vertShader);
+  glDeleteShader(fragShader);
+}
+
+Shader::~Shader() {
+  glDeleteProgram(id);
+}
+
+string Shader::readFile(const string &path) {
+  std::ifstream file(path);
+
+  if (!file.is_open())
+    throw std::runtime_error("Failed to open shader:" + path);
+
+  std::stringstream buffer;
+
+  buffer << file.rdbuf();
+
+  return buffer.str();
+}
+
+GLuint Shader::compileShader(const GLuint type, const char *src) {
+  GLuint shader = glCreateShader(type);
+
+  glShaderSource(shader, 1, &src, nullptr);
+
+  glCompileShader(shader);
+
+  GLint success;
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+
+  if (!success) {
+    char infoLog[512];
+
+    glGetShaderInfoLog(shader, 512, nullptr, infoLog);
+
+    if (type == GL_VERTEX_SHADER)
+      throw std::runtime_error(
+        string("Vertex shader compilation failed:\n") + infoLog
+      );
+
+    else
+      throw std::runtime_error(
+        string("Fragment shader compilation failed:\n") + infoLog
+      );
+  }
+
+  return shader;
+}
+GLuint Shader::linkProgram(const GLuint vert, const GLuint frag) {
+  GLuint program = glCreateProgram();
+
+  glAttachShader(program, vert);
+  glAttachShader(program, frag);
+
+  glLinkProgram(program);
+
+  GLint success;
+  glGetProgramiv(program, GL_LINK_STATUS, &success);
+
+  if (!success) {
+    char infoLog[512];
+
+    glGetProgramInfoLog(program, 512, nullptr, infoLog);
+
+    glDeleteProgram(program);
+
+    throw std::runtime_error(
+      string("Shader program linking failed:\n") + infoLog
+    );
+  }
+
+  return program;
+}
+
+void Shader::use() {
+  glUseProgram(id);
+}
+
+GLint Shader::getLocation(const string &name) {
+  auto it = m_locations.find(name);
+
+  if (it != m_locations.end()) {
+    return it->second;
+  }
+
+  GLint location = glGetUniformLocation(id, name.c_str());
+
+  m_locations[name] = location;
+
+  return location;
+}
+
+void Shader::setFloat(const string &name, float val) {
+  glUniform1f(getLocation(name), val);
+}
+void Shader::setInt(const string &name, int val) {
+  glUniform1i(getLocation(name), val);
+}
+void Shader::setVec2(const string &name, float x, float y) {
+  glUniform2f(getLocation(name), x, y);
+}
+void Shader::setVec3(const string &name, float x, float y, float z) {
+  glUniform3f(getLocation(name), x, y, z);
+}
+void Shader::setVec4(const string &name, float x, float y, float z, float w) {
+  glUniform4f(getLocation(name), x, y, z, w);
+}
+void Shader::setVec2(const string &name, glm::vec2 vec) {
+  glUniform2f(getLocation(name), vec.x, vec.y);
+}
+void Shader::setVec3(const string &name, glm::vec3 vec) {
+  glUniform3f(getLocation(name), vec.x, vec.y, vec.z);
+}
+void Shader::setVec4(const string &name, glm::vec4 vec) {
+  glUniform4f(getLocation(name), vec.x, vec.y, vec.z, vec.w);
+}
+void Shader::setMat4(const string &name, glm::mat4 mat) {
+  glUniformMatrix4fv(getLocation(name), 1, GL_TRUE, glm::value_ptr(mat));
+}

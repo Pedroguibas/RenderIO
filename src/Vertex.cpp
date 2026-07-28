@@ -108,4 +108,6 @@ vector<float> Vertex::flatten(const vector<Vertex> &vertexes) {
       vec.push_back(vertex.normal->z);
     }
   }
+
+  return vec;
 }
