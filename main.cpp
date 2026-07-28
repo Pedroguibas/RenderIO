@@ -78,9 +78,9 @@ int main() {
   vec.push_back(v2);
   vec.push_back(v3);
 
-  glBufferData(GL_ARRAY_BUFFER, vec.size(), vec.data(), GL_STATIC_DRAW);
-
   vector<float> vertexes = vertexes = Vertex::flatten(vec);
+
+  glBufferData(GL_ARRAY_BUFFER, vec.size(), vertexes.data(), GL_STATIC_DRAW);
 
   while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT);
