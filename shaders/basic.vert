@@ -1,11 +1,34 @@
 #version 460 core
 
 layout(location = 0) in vec3 aPosition;
-layout(location = 1) in vec4 aColor;
 
-out vec4 vertexColor;
+#ifdef HAS_COLOR
+layout(location = 1) in vec4 aColor;
+out vec4 vColor;
+#endif
+
+#ifdef HAS_UV
+layout(location = 2) in vec2 aUv;
+out vec2 vUv;
+#endif
+
+#ifdef HAS_NORMAL
+layout(location = 3) in vec3 aNormal;
+out vec3 vNormal;
+#endif
 
 void main() {
   gl_Position = vec4(aPosition, 1.0);
-  vertexColor = aColor;
+
+  #ifdef HAS_COLOR
+  vColor = aColor;
+  #endif
+
+  #ifdef HAS_UV
+  vUv = aUv;
+  #endif
+
+  #ifdef HAS_NORMAL
+  vNormal = aNormal;
+  #endif
 }

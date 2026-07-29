@@ -4,20 +4,36 @@
 #include <glad/gl.h>
 #include <string>
 #include <unordered_map>
+#include <memory>
+#include <vector>
 using std::string;
 
 class Shader {
   private:
+    static std::unordered_map<string, std::unique_ptr<Shader>> cache;
+    static string makeKey(
+      const string &vert, const string &frag, const std::vector<string> &defines
+    );
     GLuint id;
     std::unordered_map<string, GLint> m_locations;
     static GLuint compileShader(const GLuint type, const char *src);
     static GLuint linkProgram(const GLuint vert, const GLuint frag);
     string readFile(const string &path);
     GLint getLocation(const string &name);
+    string injectDefines(const string &src, const std::vector<string> &defines);
+
+    Shader(
+      const string &vert, const string &frag, const std::vector<string> &defines
+    );
 
   public:
-    Shader(const string &vert, const string &frag);
     ~Shader();
+
+    static Shader *create(
+      const string &vert,
+      const string &frag,
+      const std::vector<string> &defines = {}
+    );
 
     void use();
 
