@@ -9,6 +9,7 @@
 #include "Vertex.h"
 #include "Shader.h"
 #include "Mesh.h"
+#include "Camera.h"
 using std::cout;
 using std::nullopt;
 using std::vector;
@@ -45,35 +46,36 @@ int main() {
     return -1;
   }
 
-  glEnable(GL_CULL_FACE);
   glEnable(GL_DEPTH_TEST);
-  glCullFace(GL_FRONT);
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
+  glFrontFace(GL_CCW);
 
   glViewport(0, 0, 1280, 720);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
   glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
 
-  Vertex v1(
-    glm::vec3(0.0f, 0.5f, -0.1f),
-    glm::vec4(1.0f, 0.0f, 0.0f, 1.0f),
-    nullopt,
-    nullopt
-  );
-  Vertex v2(
-    glm::vec3(0.5f, -0.5f, -0.1f),
-    glm::vec4(0.0f, 1.0f, 0.0f, 1.0f),
-    nullopt,
-    nullopt
-  );
-  Vertex v3(
-    glm::vec3(-0.5f, -0.5f, -0.1f),
-    glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
-    nullopt,
-    nullopt
-  );
-
-  vector<Vertex> vec{v1, v2, v3};
+  vector<Vertex> vec{
+    Vertex(
+      glm::vec3(0.0f, 0.5f, -0.1f),
+      glm::vec4(1.0f, 0.0f, 0.0f, 1.0f),
+      nullopt,
+      nullopt
+    ),
+    Vertex(
+      glm::vec3(-0.5f, -0.5f, -0.1f),
+      glm::vec4(0.0f, 1.0f, 0.0f, 1.0f),
+      nullopt,
+      nullopt
+    ),
+    Vertex(
+      glm::vec3(0.5f, -0.5f, -0.1f),
+      glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
+      nullopt,
+      nullopt
+    )
+  };
   vector<unsigned int> indices{0, 1, 2};
 
   vector<float> vertexes = Vertex::flatten(vec);
@@ -82,18 +84,31 @@ int main() {
 
   Shader *shader;
   try {
-    shader = Shader::create(
-      "shaders/basic.vert", "shaders/basic.frag", vector<string>{"HAS_COLOR"}
-    );
+    shader =
+      Shader::create("shaders/basic.vert", "shaders/basic.frag", {"HAS_COLOR"});
   } catch (const std::exception &e) {
     cout << e.what();
     return -1;
   }
 
+  Camera cam({1.0f, 1.0f, 1.0f});
+  cam.lookAt({0.0f, 0.0f, -1.0f});
+
+  int w_width, w_height;
   while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    glfwGetWindowSize(window, &w_width, &w_height);
+
     shader->use();
+
+    mat4 model(1.0f);
+    mat4 view = cam.getView();
+    mat4 perspective = cam.getPerspective((float)w_width / (float)w_height);
+
+    shader->setMat4("model", model);
+    shader->setMat4("view", view);
+    shader->setMat4("perspective", perspective);
 
     triangle.draw();
 

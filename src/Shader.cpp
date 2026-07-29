@@ -143,7 +143,7 @@ void Shader::setVec4(const string &name, glm::vec4 vec) {
   glUniform4f(getLocation(name), vec.x, vec.y, vec.z, vec.w);
 }
 void Shader::setMat4(const string &name, glm::mat4 mat) {
-  glUniformMatrix4fv(getLocation(name), 1, GL_TRUE, glm::value_ptr(mat));
+  glUniformMatrix4fv(getLocation(name), 1, GL_FALSE, glm::value_ptr(mat));
 }
 
 string
