@@ -1,6 +1,6 @@
 #include "Mesh.h"
 
-Mesh::Mesh(const vector<Vertex> &vertices, const vector<unsigned int> &indicies)
+Mesh::Mesh(const vector<Vertex> &vertices, const vector<unsigned int> &indices)
 : vertices(vertices),
   indices(indices) {
   glGenVertexArrays(1, &VAO);
@@ -22,28 +22,21 @@ Mesh::Mesh(const vector<Vertex> &vertices, const vector<unsigned int> &indicies)
 
   GLsizei stride = (vertexes.size() / vertices.size()) * sizeof(float);
 
-  int currentIndex = 0;
   int offset = 3;
   addAttribute(0, 3, false, stride, (void *)0);
 
   if (vertices.at(0).hasColor()) {
-    addAttribute(
-      ++currentIndex, 4, GL_TRUE, stride, (void *)(offset * sizeof(float))
-    );
+    addAttribute(1, 4, GL_TRUE, stride, (void *)(offset * sizeof(float)));
     offset += 4;
   }
 
   if (vertices.at(0).hasUv()) {
-    addAttribute(
-      ++currentIndex, 2, GL_TRUE, stride, (void *)(offset * sizeof(float))
-    );
+    addAttribute(2, 2, GL_TRUE, stride, (void *)(offset * sizeof(float)));
     offset += 2;
   }
 
   if (vertices.at(0).hasNormal()) {
-    addAttribute(
-      ++currentIndex, 3, GL_TRUE, stride, (void *)(offset * sizeof(float))
-    );
+    addAttribute(3, 3, GL_TRUE, stride, (void *)(offset * sizeof(float)));
   }
 
   glBufferData(

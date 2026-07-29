@@ -5,11 +5,19 @@
 #include <iostream>
 #include <filesystem>
 #include <glm/gtc/type_ptr.hpp>
+#include <algorithm>
 
-Shader::Shader(const string &vert, const string &frag) {
+std::unordered_map<string, std::unique_ptr<Shader>> Shader::cache;
+
+Shader::Shader(
+  const string &vert, const string &frag, const std::vector<string> &defines
+) {
 
   string vertSrc = Shader::readFile(vert);
   string fragSrc = Shader::readFile(frag);
+
+  vertSrc = injectDefines(vertSrc, defines);
+  fragSrc = injectDefines(fragSrc, defines);
 
   GLuint vertShader = Shader::compileShader(GL_VERTEX_SHADER, vertSrc.c_str());
   GLuint fragShader =
@@ -136,4 +144,45 @@ void Shader::setVec4(const string &name, glm::vec4 vec) {
 }
 void Shader::setMat4(const string &name, glm::mat4 mat) {
   glUniformMatrix4fv(getLocation(name), 1, GL_TRUE, glm::value_ptr(mat));
+}
+
+string
+Shader::injectDefines(const string &src, const std::vector<string> &defines) {
+  size_t versionEnd = src.find('\n');
+  string result = src.substr(0, versionEnd + 1);
+
+  for (const auto &def : defines) {
+    result += "#define " + def + '\n';
+  }
+
+  result += src.substr(versionEnd + 1);
+  return result;
+}
+
+string Shader::makeKey(
+  const string &vert, const string &frag, const std::vector<string> &defines
+) {
+  string key = vert + '|' + frag;
+  auto sorted = defines;
+  std::sort(sorted.begin(), sorted.end());
+
+  for (const auto &d : sorted)
+    key += '|' + d;
+
+  return key;
+}
+
+Shader *Shader::create(
+  const string &vert, const string &frag, const std::vector<string> &defines
+) {
+  string key = makeKey(vert, frag, defines);
+  auto it = Shader::cache.find(key);
+
+  if (it != Shader::cache.end())
+    return it->second.get();
+
+  std::unique_ptr<Shader> shader(new Shader(vert, frag, defines));
+  Shader *ptr = shader.get();
+  Shader::cache[key] = std::move(shader);
+  return ptr;
 }

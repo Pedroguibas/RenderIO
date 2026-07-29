@@ -68,13 +68,13 @@ int main() {
   );
   Vertex v3(
     glm::vec3(-0.5f, -0.5f, -0.1f),
-    glm::vec4(1.0f, 0.0f, 1.0f, 1.0f),
+    glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
     nullopt,
     nullopt
   );
 
   vector<Vertex> vec{v1, v2, v3};
-  vector<unsigned int> indices{1, 2, 3};
+  vector<unsigned int> indices{0, 1, 2};
 
   vector<float> vertexes = Vertex::flatten(vec);
 
@@ -82,7 +82,9 @@ int main() {
 
   Shader *shader;
   try {
-    shader = new Shader("shaders/basic.vert", "shaders/basic.frag");
+    shader = Shader::create(
+      "shaders/basic.vert", "shaders/basic.frag", vector<string>{"HAS_COLOR"}
+    );
   } catch (const std::exception &e) {
     cout << e.what();
     return -1;
@@ -100,7 +102,6 @@ int main() {
     glfwPollEvents();
   }
 
-  delete shader;
   glfwDestroyWindow(window);
   glfwTerminate();
 
