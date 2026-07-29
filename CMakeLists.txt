@@ -32,6 +32,7 @@ add_executable(renderIO
 	src/Vertex.cpp
 	src/Shader.cpp
 	src/Mesh.cpp
+	src/Camera.cpp
 )
 
 target_include_directories(renderIO PRIVATE
