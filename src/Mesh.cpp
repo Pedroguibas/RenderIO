@@ -1,8 +1,41 @@
 #include "Mesh.h"
 
+#include <stdexcept>
+
 Mesh::Mesh(const vector<Vertex> &vertices, const vector<unsigned int> &indices)
 : vertices(vertices),
   indices(indices) {
+
+  if (vertices.empty()) {
+    throw std::invalid_argument("Mesh requires at least one vertex");
+  }
+
+  if (indices.empty()) {
+    throw std::invalid_argument("Mesh requires at least one index");
+  }
+
+  if (
+    indices.size() >
+    static_cast<std::size_t>(std::numeric_limits<GLsizei>::max())
+  ) {
+    throw std::overflow_error("Mesh has too many indices");
+  }
+
+  const Vertex &first = vertices.front();
+
+  for (const Vertex &vertex : vertices) {
+    if (
+      vertex.hasColor() != first.hasColor() ||
+      vertex.hasUv() != first.hasUv() || vertex.hasNormal() != first.hasNormal()
+    ) {
+      throw std::invalid_argument(
+        "All mesh vertices must have the same layout"
+      );
+    }
+  }
+
+  indiceCount = static_cast<GLsizei>(indices.size());
+
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
   glGenBuffers(1, &EBO);
@@ -23,20 +56,20 @@ Mesh::Mesh(const vector<Vertex> &vertices, const vector<unsigned int> &indices)
   GLsizei stride = (vertexes.size() / vertices.size()) * sizeof(float);
 
   int offset = 3;
-  addAttribute(0, 3, false, stride, (void *)0);
+  addAttribute(0, 3, GL_FALSE, stride, (void *)0);
 
   if (vertices.at(0).hasColor()) {
-    addAttribute(1, 4, GL_TRUE, stride, (void *)(offset * sizeof(float)));
+    addAttribute(1, 4, GL_FALSE, stride, (void *)(offset * sizeof(float)));
     offset += 4;
   }
 
   if (vertices.at(0).hasUv()) {
-    addAttribute(2, 2, GL_TRUE, stride, (void *)(offset * sizeof(float)));
+    addAttribute(2, 2, GL_FALSE, stride, (void *)(offset * sizeof(float)));
     offset += 2;
   }
 
   if (vertices.at(0).hasNormal()) {
-    addAttribute(3, 3, GL_TRUE, stride, (void *)(offset * sizeof(float)));
+    addAttribute(3, 3, GL_FALSE, stride, (void *)(offset * sizeof(float)));
   }
 
   glBufferData(
@@ -66,9 +99,11 @@ void Mesh::addAttribute(
 void Mesh::draw() const {
   glBindVertexArray(VAO);
 
-  glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr);
+  glDrawElements(GL_TRIANGLES, indiceCount, GL_UNSIGNED_INT, nullptr);
+
+  glBindVertexArray(0);
 }
 
-vector<Vertex> Mesh::getVertices() {
+const vector<Vertex> &Mesh::getVertices() const {
   return vertices;
 }

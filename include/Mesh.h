@@ -7,11 +7,12 @@ using std::vector;
 
 class Mesh {
   private:
-    GLuint VAO;
-    GLuint VBO;
-    GLuint EBO;
+    GLuint VAO = 0;
+    GLuint VBO = 0;
+    GLuint EBO = 0;
     vector<Vertex> vertices;
     vector<unsigned int> indices;
+    GLsizei indiceCount;
 
     void addAttribute(
       GLuint index,
@@ -27,7 +28,7 @@ class Mesh {
 
     void draw() const;
 
-    vector<Vertex> getVertices();
+    const vector<Vertex> &getVertices() const noexcept;
 
     Mesh(const Mesh &) = delete;
     Mesh &operator=(const Mesh &) = delete;
