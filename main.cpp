@@ -10,6 +10,7 @@
 #include "Shader.h"
 #include "Mesh.h"
 #include "Camera.h"
+#include "MeshFactory.h"
 using std::cout;
 using std::nullopt;
 using std::vector;
@@ -56,31 +57,9 @@ int main() {
 
   glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
 
-  vector<Vertex> vec{
-    Vertex(
-      glm::vec3(0.0f, 0.5f, -0.1f),
-      glm::vec4(1.0f, 0.0f, 0.0f, 1.0f),
-      nullopt,
-      nullopt
-    ),
-    Vertex(
-      glm::vec3(-0.5f, -0.5f, -0.1f),
-      glm::vec4(0.0f, 1.0f, 0.0f, 1.0f),
-      nullopt,
-      nullopt
-    ),
-    Vertex(
-      glm::vec3(0.5f, -0.5f, -0.1f),
-      glm::vec4(0.0f, 0.0f, 1.0f, 1.0f),
-      nullopt,
-      nullopt
-    )
-  };
-  vector<unsigned int> indices{0, 1, 2};
+  MeshFactory mf;
 
-  vector<float> vertexes = Vertex::flatten(vec);
-
-  Mesh triangle(vec, indices);
+  Mesh cube = mf.box().withColor(glm::vec4{0.2f, 0.7f, 0.8f, 1.0f}).build();
 
   Shader *shader;
   try {
@@ -110,7 +89,7 @@ int main() {
     shader->setMat4("view", view);
     shader->setMat4("perspective", perspective);
 
-    triangle.draw();
+    cube.draw();
 
     glfwSwapBuffers(window);
 

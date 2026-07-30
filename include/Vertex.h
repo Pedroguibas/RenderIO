@@ -19,9 +19,9 @@ class Vertex {
   public:
     Vertex(
       const glm::vec3 &position,
-      const optional<glm::vec4> &color,
-      const optional<glm::vec2> &uv,
-      const optional<glm::vec3> &normal
+      const optional<glm::vec4> &color = std::nullopt,
+      const optional<glm::vec2> &uv = std::nullopt,
+      const optional<glm::vec3> &normal = std::nullopt
     );
 
     void setPosition(const glm::vec3 &position);
