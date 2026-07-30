@@ -11,6 +11,7 @@
 #include "Mesh.h"
 #include "Camera.h"
 #include "MeshFactory.h"
+#include "Texture.h"
 using std::cout;
 using std::nullopt;
 using std::vector;
@@ -59,12 +60,12 @@ int main() {
 
   MeshFactory mf;
 
-  Mesh cube = mf.box().withColor(glm::vec4{0.2f, 0.7f, 0.8f, 1.0f}).build();
+  Mesh cube = mf.box().withUv().build();
 
   Shader *shader;
   try {
     shader =
-      Shader::create("shaders/basic.vert", "shaders/basic.frag", {"HAS_COLOR"});
+      Shader::create("shaders/basic.vert", "shaders/basic.frag", {"HAS_UV"});
   } catch (const std::exception &e) {
     cout << e.what();
     return -1;
@@ -72,6 +73,12 @@ int main() {
 
   Camera cam({1.0f, 1.0f, 1.0f});
   cam.lookAt({0.0f, 0.0f, -1.0f});
+  shader->use();
+  shader->setInt("diffuse", 0);
+
+  Texture tex("textures/cat.jpg");
+  tex.bind(0);
+  tex.setDefaultParams();
 
   int w_width, w_height;
   while (!glfwWindowShouldClose(window)) {
@@ -80,6 +87,8 @@ int main() {
     glfwGetWindowSize(window, &w_width, &w_height);
 
     shader->use();
+
+    tex.bind(0);
 
     mat4 model(1.0f);
     mat4 view = cam.getView();
