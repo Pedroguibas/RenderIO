@@ -50,7 +50,7 @@ Mesh MeshFactory::BoxBuilder::build() const {
   const float z = depth * 0.5f;
 
   const glm::vec2 uvs[4] = {
-    {0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {1.0f, 1.0f}
+    {0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f}
   };
 
   const CubeFace faces[6] = {

@@ -34,10 +34,13 @@ add_executable(renderIO
 	src/Mesh.cpp
 	src/Camera.cpp
 	src/MeshFactory.cpp
+	src/Texture.cpp
+	src/stb_image.cpp
 )
 
 target_include_directories(renderIO PRIVATE
 	include
+	external/stb
 )
 
 target_link_libraries(renderIO PRIVATE
