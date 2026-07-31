@@ -33,7 +33,7 @@ Shader::~Shader() {
   glDeleteProgram(id);
 }
 
-string Shader::readFile(const string &path) {
+string Shader::readFile(const string &path) const {
   std::ifstream file(path);
 
   if (!file.is_open())
@@ -100,11 +100,11 @@ GLuint Shader::linkProgram(const GLuint vert, const GLuint frag) {
   return program;
 }
 
-void Shader::use() {
+void Shader::use() const noexcept {
   glUseProgram(id);
 }
 
-GLint Shader::getLocation(const string &name) {
+GLint Shader::getLocation(const string &name) noexcept {
   auto it = m_locations.find(name);
 
   if (it != m_locations.end()) {
@@ -118,36 +118,39 @@ GLint Shader::getLocation(const string &name) {
   return location;
 }
 
-void Shader::setFloat(const string &name, float val) {
+void Shader::setFloat(const string &name, float val) noexcept {
   glUniform1f(getLocation(name), val);
 }
-void Shader::setInt(const string &name, int val) {
+void Shader::setInt(const string &name, int val) noexcept {
   glUniform1i(getLocation(name), val);
 }
-void Shader::setVec2(const string &name, float x, float y) {
+void Shader::setVec2(const string &name, float x, float y) noexcept {
   glUniform2f(getLocation(name), x, y);
 }
-void Shader::setVec3(const string &name, float x, float y, float z) {
+void Shader::setVec3(const string &name, float x, float y, float z) noexcept {
   glUniform3f(getLocation(name), x, y, z);
 }
-void Shader::setVec4(const string &name, float x, float y, float z, float w) {
+void Shader::setVec4(
+  const string &name, float x, float y, float z, float w
+) noexcept {
   glUniform4f(getLocation(name), x, y, z, w);
 }
-void Shader::setVec2(const string &name, glm::vec2 vec) {
+void Shader::setVec2(const string &name, glm::vec2 vec) noexcept {
   glUniform2f(getLocation(name), vec.x, vec.y);
 }
-void Shader::setVec3(const string &name, glm::vec3 vec) {
+void Shader::setVec3(const string &name, glm::vec3 vec) noexcept {
   glUniform3f(getLocation(name), vec.x, vec.y, vec.z);
 }
-void Shader::setVec4(const string &name, glm::vec4 vec) {
+void Shader::setVec4(const string &name, glm::vec4 vec) noexcept {
   glUniform4f(getLocation(name), vec.x, vec.y, vec.z, vec.w);
 }
-void Shader::setMat4(const string &name, glm::mat4 mat) {
+void Shader::setMat4(const string &name, glm::mat4 mat) noexcept {
   glUniformMatrix4fv(getLocation(name), 1, GL_FALSE, glm::value_ptr(mat));
 }
 
-string
-Shader::injectDefines(const string &src, const std::vector<string> &defines) {
+string Shader::injectDefines(
+  const string &src, const std::vector<string> &defines
+) const noexcept {
   size_t versionEnd = src.find('\n');
   string result = src.substr(0, versionEnd + 1);
 
@@ -161,7 +164,7 @@ Shader::injectDefines(const string &src, const std::vector<string> &defines) {
 
 string Shader::makeKey(
   const string &vert, const string &frag, const std::vector<string> &defines
-) {
+) noexcept {
   string key = vert + '|' + frag;
   auto sorted = defines;
   std::sort(sorted.begin(), sorted.end());
