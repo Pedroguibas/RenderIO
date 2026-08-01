@@ -121,6 +121,11 @@ int main() {
 
   DirectionLight light(vec4(1.0f), vec3(-1.0f, -1.0f, -1.0f));
   PointLight pLight(vec4(1.0f, 0.0f, 1.0f, 1.0f), vec3(0.0f, 2.0f, 0.0f));
+  SpotLight sLight(
+    vec4(0.2f, 0.5f, 0.8f, 1.0f),
+    vec3(3.0f, 3.0f, 0.0f),
+    glm::normalize(vec3(-1.0f, -1.0f, 0.0f))
+  );
 
   int w_width, w_height;
   while (!glfwWindowShouldClose(window)) {
@@ -145,6 +150,7 @@ int main() {
     shader->setFloat("shininess", 128.0f);
     light.upload(*shader, "light");
     pLight.upload(*shader, "pLight");
+    sLight.upload(*shader, "sLight");
 
     groundTex->bind(0);
     floor.draw();

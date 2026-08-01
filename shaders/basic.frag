@@ -30,6 +30,7 @@ struct PointLight {
 struct SpotLight {
   vec4 color;
   vec3 position;
+  vec3 direction;
 
   float constant;
   float linear;
@@ -101,9 +102,9 @@ vec3 calcPointLight(
     shininess
   );
 
-  vec3 diffuse = diffuseStrength * light.color;
+  vec3 diffuse = diffuseStrength * light.color.rgb;
 
-  vec3 specular = specularStrength * light.color;
+  vec3 specular = specularStrength * light.color.rgb;
 
   float attenuation = 1.0 / (
     light.constant +
@@ -112,6 +113,58 @@ vec3 calcPointLight(
   );
 
   return (baseColor.rgb * diffuse + specular) * attenuation;
+}
+
+vec3 calcSpotLight(
+  SpotLight light,
+  vec3 normal,
+  vec3 viewDir,
+  vec3 baseColor
+) {
+  vec3 fragmentToLight = light.position - fragPos;
+
+  float distanceToLight = length(fragmentToLight);
+
+  vec3 dirToLight = normalize(fragmentToLight);
+
+  float diffuseStrength = max(dot(normal, dirToLight), 0.0);
+
+  vec3 reflectedDir = reflect(-dirToLight, normal);
+
+  float specularStrength = pow(
+    max(
+      dot(viewDir, reflectedDir),
+      0.0
+    ),
+    shininess
+  );
+
+  vec3 diffuse = diffuseStrength * light.color.rgb;
+
+  vec3 specular = specularStrength * light.color.rgb;
+
+  float attenuation = 1.0 / (
+    light.constant +
+    light.linear * distanceToLight +
+    light.quadratic * light.quadratic * distanceToLight
+  );
+
+  vec3 lightToFrag = normalize(fragPos - light.position);
+
+  float theta = dot(
+    lightToFrag,
+    normalize(light.direction)
+  );
+
+  float epsilon = light.innerCutoff - light.outerCutoff;
+
+  float intensity = clamp(
+    (theta - light.outerCutoff) / epsilon,
+    0.0,
+    1.0
+  );
+
+  return (baseColor * diffuse + specular) * attenuation * intensity;
 }
 
 void main() {
@@ -133,6 +186,8 @@ void main() {
     finalColor = calcDirectionLight(light, normalizedNormal, viewDir, baseColor.rgb);
 
     finalColor += calcPointLight(pLight, normalizedNormal, viewDir, baseColor.rgb);
+
+    finalColor += calcSpotLight(sLight, normalizedNormal, viewDir, baseColor.rgb);
   #endif
 
   FragColor = vec4(finalColor, baseColor.a);
