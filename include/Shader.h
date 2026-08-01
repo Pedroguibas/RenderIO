@@ -13,14 +13,16 @@ class Shader {
     static std::unordered_map<string, std::unique_ptr<Shader>> cache;
     static string makeKey(
       const string &vert, const string &frag, const std::vector<string> &defines
-    );
+    ) noexcept;
     GLuint id;
     std::unordered_map<string, GLint> m_locations;
     static GLuint compileShader(const GLuint type, const char *src);
     static GLuint linkProgram(const GLuint vert, const GLuint frag);
-    string readFile(const string &path);
-    GLint getLocation(const string &name);
-    string injectDefines(const string &src, const std::vector<string> &defines);
+    string readFile(const string &path) const;
+    GLint getLocation(const string &name) noexcept;
+    string injectDefines(
+      const string &src, const std::vector<string> &defines
+    ) const noexcept;
 
     Shader(
       const string &vert, const string &frag, const std::vector<string> &defines
@@ -35,15 +37,16 @@ class Shader {
       const std::vector<string> &defines = {}
     );
 
-    void use();
+    void use() const noexcept;
 
-    void setFloat(const string &name, float val);
-    void setInt(const string &name, int val);
-    void setVec2(const string &name, float x, float y);
-    void setVec3(const string &name, float x, float y, float z);
-    void setVec4(const string &name, float x, float y, float z, float w);
-    void setVec2(const string &name, glm::vec2 vec);
-    void setVec3(const string &name, glm::vec3 vec);
-    void setVec4(const string &name, glm::vec4 vec);
-    void setMat4(const string &name, glm::mat4 mat);
+    void setFloat(const string &name, float val) noexcept;
+    void setInt(const string &name, int val) noexcept;
+    void setVec2(const string &name, float x, float y) noexcept;
+    void setVec3(const string &name, float x, float y, float z) noexcept;
+    void
+    setVec4(const string &name, float x, float y, float z, float w) noexcept;
+    void setVec2(const string &name, glm::vec2 vec) noexcept;
+    void setVec3(const string &name, glm::vec3 vec) noexcept;
+    void setVec4(const string &name, glm::vec4 vec) noexcept;
+    void setMat4(const string &name, glm::mat4 mat) noexcept;
 };

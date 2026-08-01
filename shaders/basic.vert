@@ -21,8 +21,12 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 perspective;
 
+out vec3 fragPos;
+
 void main() {
-  gl_Position = perspective * view * model * vec4(aPosition, 1.0);
+  vec4 worldPos = model * vec4(aPosition, 1.0);
+
+  gl_Position = perspective * view * worldPos;
 
   #ifdef HAS_COLOR
   vColor = aColor;
@@ -33,6 +37,8 @@ void main() {
   #endif
 
   #ifdef HAS_NORMAL
-  vNormal = aNormal;
+  vNormal = mat3(transpose(inverse(model))) * aNormal;
   #endif
+
+  fragPos = worldPos.xyz;
 }
