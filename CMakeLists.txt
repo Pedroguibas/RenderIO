@@ -37,6 +37,7 @@ add_executable(renderIO
 	src/Texture.cpp
 	src/stb_image.cpp
 	src/Lights.cpp
+	src/Material.cpp
 )
 
 target_include_directories(renderIO PRIVATE

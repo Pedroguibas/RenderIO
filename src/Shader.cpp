@@ -124,6 +124,9 @@ void Shader::setFloat(const string &name, float val) noexcept {
 void Shader::setInt(const string &name, int val) noexcept {
   glUniform1i(getLocation(name), val);
 }
+void Shader::setBool(const string &name, bool val) noexcept {
+  glUniform1i(getLocation(name), val);
+}
 void Shader::setVec2(const string &name, float x, float y) noexcept {
   glUniform2f(getLocation(name), x, y);
 }
