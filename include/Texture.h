@@ -11,7 +11,7 @@ class Texture {
     int height;
 
   public:
-    Texture(const string &path);
+    Texture(const string &path, unsigned int unit);
     ~Texture();
 
     void bind(GLuint unit) const;

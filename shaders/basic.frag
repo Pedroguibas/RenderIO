@@ -6,12 +6,33 @@ in vec4 vColor;
 
 #ifdef HAS_UV
 in vec2 vUv;
-uniform sampler2D diffuse;
 #endif
 
 #ifdef HAS_NORMAL
-in vec3 vNormal;
+  in vec3 vNormal;
 #endif
+
+struct Specularity {
+  sampler2D texture;
+  float intensity;
+  float shininess;
+  vec3 color;
+  bool enabled;
+  bool mapEnabled;
+};
+
+struct Emission {
+  sampler2D texture;
+  float intensity;
+  bool enabled;
+  bool mapEnabled;
+};
+
+struct Material {
+  sampler2D diffuse;
+  Specularity specular;
+  Emission emission;
+};
 
 struct DirectionLight {
   vec4 color;
@@ -46,16 +67,60 @@ uniform SpotLight sLight;
 
 uniform vec3 cameraPos;
 uniform float ambientStrength;
-uniform float shininess;
+uniform Material material;
 
 in vec3 fragPos;
 
 out vec4 FragColor;
 
+vec3 calcSpecularity(
+  vec3 viewDir,
+  vec3 dirToLight,
+  vec3 normal,
+  float reflectivity,
+  vec3 lightColor
+) {
+  if (!material.specular.enabled)
+    return vec3(0.0);
+
+  float normalLightDot = dot(normal, dirToLight);
+
+  if (normalLightDot <= 0.0)
+      return vec3(0.0);
+
+  vec3 reflectedDir = reflect(-dirToLight, normal);
+
+  float specularStrength = pow(
+    max(dot(viewDir, reflectedDir), 0.0),
+    material.specular.shininess
+  );
+  return material.specular.intensity *
+    reflectivity *
+    specularStrength *
+    material.specular.color *
+    lightColor;
+}
+
+float calcAttenuation(
+  vec3 fragmentToLight,
+  float constant,
+  float linear,
+  float quadratic
+) {
+  float distanceToLight = length(fragmentToLight);
+
+  return 1.0 / (
+    constant +
+    linear * distanceToLight +
+    quadratic * distanceToLight * distanceToLight
+  );
+}
+
 vec3 calcDirectionLight(
   DirectionLight light,
   vec3 normal,
   vec3 viewDir,
+  float reflectivity,
   vec3 baseColor
 ) {
   vec3 dirToLight = normalize(-light.direction);
@@ -63,18 +128,10 @@ vec3 calcDirectionLight(
 
   vec3 ambient = ambientStrength * light.color.rgb;
 
-
-  vec3 reflectedDir = reflect(-dirToLight, normal);
-
-  float specularStrength = pow(
-    max(dot(viewDir, reflectedDir), 0.0),
-    shininess
-  );
-
   vec3 diffuse = diffuseStrength * light.color.rgb;
 
-  vec3 specular = specularStrength * light.color.rgb;
-  
+  vec3 specular = calcSpecularity(viewDir, dirToLight, normal, reflectivity, light.color.rgb);
+
   return baseColor * (ambient + diffuse) + specular;
 }
 
@@ -82,35 +139,20 @@ vec3 calcPointLight(
   PointLight light,
   vec3 normal,
   vec3 viewDir,
+  float reflectivity,
   vec3 baseColor
 ) {
   vec3 fragmentToLight = light.position - fragPos;
-
-  float distanceToLight = length(fragmentToLight);
 
   vec3 dirToLight = normalize(fragmentToLight);
 
   float diffuseStrength = max(dot(normal, dirToLight), 0.0);
 
-  vec3 reflectedDir = reflect(-dirToLight, normal);
-
-  float specularStrength = pow(
-    max(
-      dot(viewDir, reflectedDir),
-      0.0
-    ),
-    shininess
-  );
-
   vec3 diffuse = diffuseStrength * light.color.rgb;
 
-  vec3 specular = specularStrength * light.color.rgb;
+  vec3 specular = calcSpecularity(viewDir, dirToLight, normal, reflectivity, light.color.rgb);
 
-  float attenuation = 1.0 / (
-    light.constant +
-    light.linear * distanceToLight +
-    light.quadratic * light.quadratic * distanceToLight
-  );
+  float attenuation = calcAttenuation(fragmentToLight, light.constant, light.linear, light.quadratic);
 
   return (baseColor.rgb * diffuse + specular) * attenuation;
 }
@@ -119,35 +161,20 @@ vec3 calcSpotLight(
   SpotLight light,
   vec3 normal,
   vec3 viewDir,
+  float reflectivity,
   vec3 baseColor
 ) {
   vec3 fragmentToLight = light.position - fragPos;
-
-  float distanceToLight = length(fragmentToLight);
 
   vec3 dirToLight = normalize(fragmentToLight);
 
   float diffuseStrength = max(dot(normal, dirToLight), 0.0);
 
-  vec3 reflectedDir = reflect(-dirToLight, normal);
-
-  float specularStrength = pow(
-    max(
-      dot(viewDir, reflectedDir),
-      0.0
-    ),
-    shininess
-  );
-
   vec3 diffuse = diffuseStrength * light.color.rgb;
 
-  vec3 specular = specularStrength * light.color.rgb;
+  vec3 specular = calcSpecularity(viewDir, dirToLight, normal, reflectivity, light.color.rgb);
 
-  float attenuation = 1.0 / (
-    light.constant +
-    light.linear * distanceToLight +
-    light.quadratic * light.quadratic * distanceToLight
-  );
+  float attenuation = calcAttenuation(fragmentToLight, light.constant, light.linear, light.quadratic);
 
   vec3 lightToFrag = normalize(fragPos - light.position);
 
@@ -170,9 +197,17 @@ vec3 calcSpotLight(
 void main() {
   vec4 baseColor = vec4(1.0);
   vec3 normal = vec3(0.0);
+  float reflectivity = 1.0;
+  vec3 emission = vec3(0.0);
 
   #ifdef HAS_UV
-  baseColor = texture(diffuse, vUv);
+  baseColor = texture(material.diffuse, vUv);
+  if (material.specular.enabled && material.specular.mapEnabled)
+    reflectivity = texture(material.specular.texture, vUv).r;
+
+  if (material.emission.mapEnabled && material.emission.enabled)
+    emission = texture(material.emission.texture, vUv).rgb * material.emission.intensity;
+
   #elif defined(HAS_COLOR)
   baseColor = vColor;
   #endif
@@ -183,12 +218,12 @@ void main() {
     vec3 normalizedNormal = normalize(normal);
     vec3 viewDir = normalize(cameraPos - fragPos);
 
-    finalColor = calcDirectionLight(light, normalizedNormal, viewDir, baseColor.rgb);
+    finalColor = calcDirectionLight(light, normalizedNormal, viewDir, reflectivity, baseColor.rgb);
 
-    finalColor += calcPointLight(pLight, normalizedNormal, viewDir, baseColor.rgb);
+    finalColor += calcPointLight(pLight, normalizedNormal, viewDir, reflectivity, baseColor.rgb);
 
-    finalColor += calcSpotLight(sLight, normalizedNormal, viewDir, baseColor.rgb);
+    finalColor += calcSpotLight(sLight, normalizedNormal, viewDir, reflectivity, baseColor.rgb);
   #endif
 
-  FragColor = vec4(finalColor, baseColor.a);
+  FragColor = vec4(finalColor + emission, baseColor.a);
 }

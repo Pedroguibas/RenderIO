@@ -13,6 +13,7 @@
 #include "MeshFactory.h"
 #include "Texture.h"
 #include "Lights.h"
+#include "Material.h"
 using std::cout;
 using std::nullopt;
 using std::vector;
@@ -102,18 +103,18 @@ int main() {
 
   Camera cam({1.5f, 2.0f, 1.5f});
   shader->use();
-  shader->setInt("diffuse", 0);
 
-  Texture *tex;
   Texture *groundTex;
+  Texture *boxDiffuse;
+  Texture *boxSpecular;
   try {
-    tex = new Texture("textures/cat.jpg");
-    tex->bind(0);
-    tex->setDefaultParams();
+    groundTex = new Texture("textures/ground.jpg", 0);
 
-    groundTex = new Texture("textures/ground.jpg");
-    groundTex->bind(0);
-    groundTex->setDefaultParams();
+    boxDiffuse = new Texture("textures/box_diffuse.png", 1);
+    boxDiffuse->bind(1);
+
+    boxSpecular = new Texture("textures/box_specular.png", 2);
+    boxSpecular->bind(2);
   } catch (const std::exception &e) {
     cout << e.what();
     return -1;
@@ -126,6 +127,14 @@ int main() {
     vec3(3.0f, 3.0f, 0.0f),
     glm::normalize(vec3(-1.0f, -1.0f, 0.0f))
   );
+
+  Material box(
+    {.diffuseIndex = 1,
+     .specular = {.index = 2, .enabled = true, .mapEnabled = true},
+     .emission = {.enabled = false},
+     .shaderStruct = {}}
+  );
+  Material ground({.specular = {.enabled = true}});
 
   int w_width, w_height;
   while (!glfwWindowShouldClose(window)) {
@@ -147,15 +156,14 @@ int main() {
     shader->setMat4("perspective", perspective);
     shader->setFloat("ambientStrength", 0.25f);
     shader->setVec3("cameraPos", cam.getPosition());
-    shader->setFloat("shininess", 128.0f);
     light.upload(*shader, "light");
     pLight.upload(*shader, "pLight");
     sLight.upload(*shader, "sLight");
 
-    groundTex->bind(0);
+    ground.use(*shader);
     floor.draw();
 
-    tex->bind(0);
+    box.use(*shader);
     cube.draw();
 
     glfwSwapBuffers(window);

@@ -41,6 +41,7 @@ class Shader {
 
     void setFloat(const string &name, float val) noexcept;
     void setInt(const string &name, int val) noexcept;
+    void setBool(const string &name, bool val) noexcept;
     void setVec2(const string &name, float x, float y) noexcept;
     void setVec3(const string &name, float x, float y, float z) noexcept;
     void

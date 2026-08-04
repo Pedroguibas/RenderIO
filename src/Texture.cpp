@@ -3,7 +3,7 @@
 #include <stb_image.h>
 #include <stdexcept>
 
-Texture::Texture(const string &path) {
+Texture::Texture(const string &path, unsigned int unit) {
   int channels;
 
   stbi_set_flip_vertically_on_load(true);
@@ -31,7 +31,7 @@ Texture::Texture(const string &path) {
   }
 
   glGenTextures(1, &id);
-  glBindTexture(GL_TEXTURE_2D, id);
+  bind(unit);
 
   glTexImage2D(
     GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data
