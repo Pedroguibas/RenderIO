@@ -65,6 +65,12 @@ add_custom_command(TARGET renderIO POST_BUILD
         $<TARGET_FILE_DIR:renderIO>/textures
 )
 
+add_custom_command(TARGET renderIO POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/models
+        $<TARGET_FILE_DIR:renderIO>/models
+)
+
 target_link_options(renderIO PRIVATE
 	-static
 	-static-libgcc

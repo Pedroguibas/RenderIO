@@ -7,7 +7,7 @@
 #include <glm/glm.hpp>
 #include <stdexcept>
 
-Model::Model(const std::vector<Mesh> &meshes)
+Model::Model(std::vector<Mesh> meshes)
 : meshes(std::move(meshes)),
   directory(NULL) {}
 
@@ -23,9 +23,7 @@ std::vector<Mesh> &Model::getMeshes() noexcept {
 }
 
 void Model::draw(Shader &shader) const {
-  for (const auto &mesh : meshes) {
-    mesh.draw(shader);
-  }
+  drawNode(root, shader);
 }
 
 void Model::loadModel(const std::filesystem::path &path) {
@@ -39,7 +37,7 @@ void Model::loadModel(const std::filesystem::path &path) {
 
   if (
     scene == nullptr || scene->mRootNode == nullptr ||
-    (scene->mFlags && AI_SCENE_FLAGS_INCOMPLETE)
+    (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)
   ) {
     throw std::runtime_error(
       "Failed to load model '" + path.string() +
@@ -50,21 +48,32 @@ void Model::loadModel(const std::filesystem::path &path) {
   directory = path.parent_path();
 
   meshes.clear();
-  processNode(scene->mRootNode, scene);
+  root = processNode(scene->mRootNode, scene);
 }
 
-void Model::processNode(const aiNode *node, const aiScene *scene) {
+ModelNode Model::processNode(
+  const aiNode *node, const aiScene *scene, const glm::mat4 &transform
+) {
+  ModelNode modelNode;
   for (unsigned int i = 0; i < node->mNumMeshes; i++) {
     const unsigned int meshIndex = node->mMeshes[i];
     const aiMesh *mesh = scene->mMeshes[meshIndex];
 
     meshes.push_back(processMesh(mesh, scene));
+    modelNode.meshIndices.push_back(meshes.size() - 1);
   }
 
+  modelNode.transform = transform * Model::toGlmMat4(node->mTransformation);
+
   for (unsigned int i = 0; i < node->mNumChildren; i++) {
-    processNode(node->mChildren[i], scene);
+    modelNode.children.push_back(
+      processNode(node->mChildren[i], scene, modelNode.transform)
+    );
   }
+
+  return std::move(modelNode);
 }
+
 Mesh Model::processMesh(const aiMesh *mesh, const aiScene *scene) {
   std::vector<Vertex> vertices;
   std::vector<unsigned int> indices;
@@ -104,4 +113,25 @@ Mesh Model::processMesh(const aiMesh *mesh, const aiScene *scene) {
   Material material({});
 
   return Mesh(std::move(vertices), std::move(indices), std::move(material));
+}
+
+void Model::drawNode(const ModelNode &node, Shader &shader) const {
+  shader.setMat4("model", node.transform);
+
+  for (auto idx : node.meshIndices)
+    meshes[idx].draw(shader);
+
+  for (const auto &n : node.children)
+    drawNode(n, shader);
+}
+
+glm::mat4 Model::toGlmMat4(const aiMatrix4x4t<float> &m) {
+  return std::move(
+    glm::mat4{
+      {m.a1, m.b1, m.c1, m.d1},
+      {m.a2, m.b2, m.c2, m.d2},
+      {m.a3, m.b3, m.c3, m.d3},
+      {m.a4, m.b4, m.c4, m.d4},
+    }
+  );
 }

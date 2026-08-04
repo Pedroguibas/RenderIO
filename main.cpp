@@ -16,6 +16,7 @@
 #include "Texture.h"
 #include "Lights.h"
 #include "Material.h"
+#include "Model.h"
 using std::cout;
 using std::nullopt;
 using std::vector;
@@ -153,13 +154,15 @@ int main() {
     ground
   );
 
+  Model cube_model("models/miku/source/miku.gltf");
+
   int w_width, w_height;
   while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     float time = glfwGetTime();
 
     cam.setPosition(vec3(3 * std::cos(time), 3, 3 * std::sin(time)));
-    cam.lookAt(vec3(0.0f));
+    cam.lookAt(vec3(0.0f, 3.5f, 0.0f));
     glfwGetWindowSize(window, &w_width, &w_height);
 
     shader->use();
@@ -177,15 +180,19 @@ int main() {
     pLight.upload(*shader, "pLight");
     sLight.upload(*shader, "sLight");
 
-    floor.draw(*shader);
+    // floor.draw(*shader);
 
-    model = glm::translate(glm::mat4(1.0f), {-1.0f, 0.5f, 0.0f});
-    shader->setMat4("model", model);
-    cube.draw(*shader);
+    // model = glm::translate(glm::mat4(1.0f), {-1.0f, 0.5f, 0.0f});
+    // shader->setMat4("model", model);
+    // cube.draw(*shader);
 
-    model = glm::translate(glm::mat4(1.0f), {1.0f, 0.5f, 0.0f});
-    shader->setMat4("model", model);
-    lamp.draw(*shader);
+    // model = glm::translate(glm::mat4(1.0f), {1.0f, 0.5f, 0.0f});
+    // shader->setMat4("model", model);
+    // lamp.draw(*shader);
+
+    // model = glm::translate(glm::mat4(1.0f), {0.0f, 1.5f, 0.0f});
+    // shader->setMat4("model", model);
+    cube_model.draw(*shader);
 
     glfwSwapBuffers(window);
 
