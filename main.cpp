@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <vector>
 #include <optional>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "Vertex.h"
 #include "Shader.h"
@@ -63,27 +65,28 @@ int main() {
   MeshFactory mf;
 
   Mesh cube = mf.box().withUv().withNormals().build();
+  Mesh lamp = mf.box().withUv().withNormals().build();
   Mesh floor(
     {Vertex(
-       vec3{-15.0f, -0.5f, 15.0f},
+       vec3{-15.0f, 0.0f, 15.0f},
        nullopt,
        glm::vec2{0.0f, 0.0f},
        vec3{0.0f, 1.0f, 0.0f}
      ),
      Vertex(
-       vec3{15.0f, -0.5f, 15.0f},
+       vec3{15.0f, 0.0f, 15.0f},
        nullopt,
        glm::vec2{5.0f, 0.0f},
        vec3{0.0f, 1.0f, 0.0f}
      ),
      Vertex(
-       vec3{-15.0f, -0.5f, -15.0f},
+       vec3{-15.0f, 0.0f, -15.0f},
        nullopt,
        glm::vec2{0.0f, 5.0f},
        vec3{0.0f, 1.0f, 0.0f}
      ),
      Vertex(
-       vec3{15.0f, -0.5f, -15.0f},
+       vec3{15.0f, 0.0f, -15.0f},
        nullopt,
        glm::vec2{5.0f, 5.0f},
        vec3{0.0f, 1.0f, 0.0f}
@@ -107,21 +110,30 @@ int main() {
   Texture *groundTex;
   Texture *boxDiffuse;
   Texture *boxSpecular;
+  Texture *lampDiffuse;
+  Texture *lampSpecular;
+  Texture *lampEmission;
   try {
     groundTex = new Texture("textures/ground.jpg", 0);
 
     boxDiffuse = new Texture("textures/box_diffuse.png", 1);
-    boxDiffuse->bind(1);
 
     boxSpecular = new Texture("textures/box_specular.png", 2);
-    boxSpecular->bind(2);
+
+    lampDiffuse = new Texture("textures/lamp_diffuse.png", 3);
+
+    lampSpecular = new Texture("textures/lamp_specular.png", 4);
+
+    lampEmission = new Texture("textures/lamp_emission.png", 5);
   } catch (const std::exception &e) {
     cout << e.what();
     return -1;
   }
 
   DirectionLight light(vec4(1.0f), vec3(-1.0f, -1.0f, -1.0f));
-  PointLight pLight(vec4(1.0f, 0.0f, 1.0f, 1.0f), vec3(0.0f, 2.0f, 0.0f));
+  PointLight pLight(
+    vec4(1.0f, 1.0f, 0.0f, 1.0f), vec3(1.0f, 0.5f, 0.0f), {.constant = 0.6f}
+  );
   SpotLight sLight(
     vec4(0.2f, 0.5f, 0.8f, 1.0f),
     vec3(3.0f, 3.0f, 0.0f),
@@ -131,10 +143,14 @@ int main() {
   Material box(
     {.diffuseIndex = 1,
      .specular = {.index = 2, .enabled = true, .mapEnabled = true},
-     .emission = {.enabled = false},
-     .shaderStruct = {}}
+     .emission = {.enabled = false}}
   );
   Material ground({.specular = {.enabled = true}});
+  Material lampMaterial({
+    .diffuseIndex = 3,
+    .specular = {.index = 4, .enabled = true, .mapEnabled = true},
+    .emission = {.index = 5, .enabled = true, .mapEnabled = true},
+  });
 
   int w_width, w_height;
   while (!glfwWindowShouldClose(window)) {
@@ -147,7 +163,7 @@ int main() {
 
     shader->use();
 
-    mat4 model(1.0f);
+    glm::mat4 model(1.0f);
     mat4 view = cam.getView();
     mat4 perspective = cam.getPerspective((float)w_width / (float)w_height);
 
@@ -163,8 +179,15 @@ int main() {
     ground.use(*shader);
     floor.draw();
 
+    model = glm::translate(glm::mat4(1.0f), {-1.0f, 0.5f, 0.0f});
+    shader->setMat4("model", model);
     box.use(*shader);
     cube.draw();
+
+    model = glm::translate(glm::mat4(1.0f), {1.0f, 0.5f, 0.0f});
+    shader->setMat4("model", model);
+    lampMaterial.use(*shader);
+    lamp.draw();
 
     glfwSwapBuffers(window);
 
