@@ -62,38 +62,6 @@ int main() {
 
   glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
 
-  MeshFactory mf;
-
-  Mesh cube = mf.box().withUv().withNormals().build();
-  Mesh lamp = mf.box().withUv().withNormals().build();
-  Mesh floor(
-    {Vertex(
-       vec3{-15.0f, 0.0f, 15.0f},
-       nullopt,
-       glm::vec2{0.0f, 0.0f},
-       vec3{0.0f, 1.0f, 0.0f}
-     ),
-     Vertex(
-       vec3{15.0f, 0.0f, 15.0f},
-       nullopt,
-       glm::vec2{5.0f, 0.0f},
-       vec3{0.0f, 1.0f, 0.0f}
-     ),
-     Vertex(
-       vec3{-15.0f, 0.0f, -15.0f},
-       nullopt,
-       glm::vec2{0.0f, 5.0f},
-       vec3{0.0f, 1.0f, 0.0f}
-     ),
-     Vertex(
-       vec3{15.0f, 0.0f, -15.0f},
-       nullopt,
-       glm::vec2{5.0f, 5.0f},
-       vec3{0.0f, 1.0f, 0.0f}
-     )},
-    {0, 1, 2, 2, 1, 3}
-  );
-
   Shader *shader;
   try {
     shader = Shader::create(
@@ -132,7 +100,7 @@ int main() {
 
   DirectionLight light(vec4(1.0f), vec3(-1.0f, -1.0f, -1.0f));
   PointLight pLight(
-    vec4(1.0f, 1.0f, 0.0f, 1.0f), vec3(1.0f, 0.5f, 0.0f), {.constant = 0.6f}
+    vec4(1.0f, 1.0f, 0.0f, 1.0f), vec3(1.0f, 0.5f, 0.0f), {.constant = 0.7f}
   );
   SpotLight sLight(
     vec4(0.2f, 0.5f, 0.8f, 1.0f),
@@ -151,6 +119,39 @@ int main() {
     .specular = {.index = 4, .enabled = true, .mapEnabled = true},
     .emission = {.index = 5, .enabled = true, .mapEnabled = true},
   });
+
+  MeshFactory mf;
+
+  Mesh cube = mf.box().withUv().withNormals().build(box);
+  Mesh lamp = mf.box().withUv().withNormals().build(lampMaterial);
+  Mesh floor(
+    {Vertex(
+       vec3{-15.0f, 0.0f, 15.0f},
+       nullopt,
+       glm::vec2{0.0f, 0.0f},
+       vec3{0.0f, 1.0f, 0.0f}
+     ),
+     Vertex(
+       vec3{15.0f, 0.0f, 15.0f},
+       nullopt,
+       glm::vec2{5.0f, 0.0f},
+       vec3{0.0f, 1.0f, 0.0f}
+     ),
+     Vertex(
+       vec3{-15.0f, 0.0f, -15.0f},
+       nullopt,
+       glm::vec2{0.0f, 5.0f},
+       vec3{0.0f, 1.0f, 0.0f}
+     ),
+     Vertex(
+       vec3{15.0f, 0.0f, -15.0f},
+       nullopt,
+       glm::vec2{5.0f, 5.0f},
+       vec3{0.0f, 1.0f, 0.0f}
+     )},
+    {0, 1, 2, 2, 1, 3},
+    ground
+  );
 
   int w_width, w_height;
   while (!glfwWindowShouldClose(window)) {
@@ -176,18 +177,15 @@ int main() {
     pLight.upload(*shader, "pLight");
     sLight.upload(*shader, "sLight");
 
-    ground.use(*shader);
-    floor.draw();
+    floor.draw(*shader);
 
     model = glm::translate(glm::mat4(1.0f), {-1.0f, 0.5f, 0.0f});
     shader->setMat4("model", model);
-    box.use(*shader);
-    cube.draw();
+    cube.draw(*shader);
 
     model = glm::translate(glm::mat4(1.0f), {1.0f, 0.5f, 0.0f});
     shader->setMat4("model", model);
-    lampMaterial.use(*shader);
-    lamp.draw();
+    lamp.draw(*shader);
 
     glfwSwapBuffers(window);
 

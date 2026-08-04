@@ -2,9 +2,14 @@
 
 #include <stdexcept>
 
-Mesh::Mesh(const vector<Vertex> &vertices, const vector<unsigned int> &indices)
+Mesh::Mesh(
+  const vector<Vertex> &vertices,
+  const vector<unsigned int> &indices,
+  const Material &material
+)
 : vertices(vertices),
-  indices(indices) {
+  indices(indices),
+  material(material) {
 
   if (vertices.empty()) {
     throw std::invalid_argument("Mesh requires at least one vertex");
@@ -85,6 +90,17 @@ Mesh::~Mesh() {
   glDeleteBuffers(1, &EBO);
 }
 
+const Material &Mesh::getMaterial() const noexcept {
+  return material;
+}
+Material &Mesh::getMaterial() noexcept {
+  return material;
+}
+
+void Mesh::setMaterial(const Material &material) {
+  this->material = material;
+}
+
 void Mesh::addAttribute(
   GLuint index,
   GLuint size,
@@ -96,7 +112,9 @@ void Mesh::addAttribute(
   glEnableVertexAttribArray(index);
 }
 
-void Mesh::draw() const {
+void Mesh::draw(Shader &shader) const {
+  material.use(shader);
+
   glBindVertexArray(VAO);
 
   glDrawElements(GL_TRIANGLES, indiceCount, GL_UNSIGNED_INT, nullptr);

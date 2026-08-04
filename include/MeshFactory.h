@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Mesh.h"
+#include "Material.h"
 #include "Vertex.h"
 #include <glm/glm.hpp>
 
@@ -39,7 +40,7 @@ class MeshFactory {
         BoxBuilder &withColor(const glm::vec4 &color) noexcept;
 
         [[nodiscard]]
-        Mesh build() const;
+        Mesh build(const Material &material) const;
     };
 
     [[nodiscard]]
