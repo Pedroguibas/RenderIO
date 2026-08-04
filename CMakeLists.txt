@@ -38,6 +38,7 @@ add_executable(renderIO
 	src/stb_image.cpp
 	src/Lights.cpp
 	src/Material.cpp
+	src/Model.cpp
 )
 
 target_include_directories(renderIO PRIVATE
