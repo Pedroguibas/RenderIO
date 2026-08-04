@@ -49,7 +49,7 @@ target_include_directories(renderIO PRIVATE
 target_link_libraries(renderIO PRIVATE
 	glfw
 	glad
-	assimp
+	assimp::assimp
 	glm::glm
 )
 
