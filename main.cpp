@@ -51,15 +51,6 @@ int main() {
   glfwSwapInterval(1);
   InputHandler inputs(DEFAULT_INPUTSET, window);
 
-  bool pressed = false;
-  inputs.listen(GLFW_PRESS, GLFW_KEY_SPACE, [&]() {
-    if (!pressed) {
-      cout << "clicked";
-      pressed = true;
-    }
-  });
-  inputs.listen(GLFW_RELEASE, GLFW_KEY_SPACE, [&]() { pressed = false; });
-
   if (!gladLoadGL(glfwGetProcAddress)) {
     cout << "Failed to load GLAD\n";
     return -1;
@@ -168,15 +159,35 @@ int main() {
 
   Model cube_model("models/miku/source/miku.gltf");
 
+  float deltaTime = glfwGetTime();
+
+  inputs.listen(KeyboardEventEnum::Hold, GLFW_KEY_SPACE, [&]() {
+    cam.moveUp(deltaTime);
+  });
+  inputs.listen(KeyboardEventEnum::Hold, GLFW_KEY_LEFT_SHIFT, [&]() {
+    cam.moveDown(deltaTime);
+  });
+  inputs.listen(KeyboardEventEnum::Hold, GLFW_KEY_W, [&]() {
+    cam.moveForward(deltaTime);
+  });
+  inputs.listen(KeyboardEventEnum::Hold, GLFW_KEY_A, [&]() {
+    cam.moveLeft(deltaTime);
+  });
+  inputs.listen(KeyboardEventEnum::Hold, GLFW_KEY_S, [&]() {
+    cam.moveBackwards(deltaTime);
+  });
+  inputs.listen(KeyboardEventEnum::Hold, GLFW_KEY_D, [&]() {
+    cam.moveRight(deltaTime);
+  });
+
   int w_width, w_height;
   while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    float time = glfwGetTime();
+    deltaTime = glfwGetTime() - deltaTime;
 
     glfwPollEvents();
     inputs.handleInputs();
 
-    cam.setPosition(vec3(4 * std::cos(time), 3, 4 * std::sin(time)));
     cam.lookAt(vec3(0.0f, 2.5f, 0.0f));
     glfwGetWindowSize(window, &w_width, &w_height);
 
