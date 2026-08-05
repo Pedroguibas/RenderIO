@@ -38,6 +38,7 @@ add_executable(renderIO
 	src/stb_image.cpp
 	src/Lights.cpp
 	src/Material.cpp
+	src/Model.cpp
 )
 
 target_include_directories(renderIO PRIVATE
@@ -48,7 +49,7 @@ target_include_directories(renderIO PRIVATE
 target_link_libraries(renderIO PRIVATE
 	glfw
 	glad
-	assimp
+	assimp::assimp
 	glm::glm
 )
 
@@ -62,6 +63,12 @@ add_custom_command(TARGET renderIO POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/textures
         $<TARGET_FILE_DIR:renderIO>/textures
+)
+
+add_custom_command(TARGET renderIO POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/models
+        $<TARGET_FILE_DIR:renderIO>/models
 )
 
 target_link_options(renderIO PRIVATE

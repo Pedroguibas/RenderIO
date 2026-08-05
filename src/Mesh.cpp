@@ -2,9 +2,14 @@
 
 #include <stdexcept>
 
-Mesh::Mesh(const vector<Vertex> &vertices, const vector<unsigned int> &indices)
+Mesh::Mesh(
+  const vector<Vertex> &vertices,
+  const vector<unsigned int> &indices,
+  const Material &material
+)
 : vertices(vertices),
-  indices(indices) {
+  indices(indices),
+  material(material) {
 
   if (vertices.empty()) {
     throw std::invalid_argument("Mesh requires at least one vertex");
@@ -85,6 +90,17 @@ Mesh::~Mesh() {
   glDeleteBuffers(1, &EBO);
 }
 
+const Material &Mesh::getMaterial() const noexcept {
+  return material;
+}
+Material &Mesh::getMaterial() noexcept {
+  return material;
+}
+
+void Mesh::setMaterial(const Material &material) {
+  this->material = material;
+}
+
 void Mesh::addAttribute(
   GLuint index,
   GLuint size,
@@ -96,7 +112,9 @@ void Mesh::addAttribute(
   glEnableVertexAttribArray(index);
 }
 
-void Mesh::draw() const {
+void Mesh::draw(Shader &shader) const {
+  material.use(shader);
+
   glBindVertexArray(VAO);
 
   glDrawElements(GL_TRIANGLES, indiceCount, GL_UNSIGNED_INT, nullptr);
@@ -106,4 +124,45 @@ void Mesh::draw() const {
 
 const vector<Vertex> &Mesh::getVertices() const {
   return vertices;
+}
+
+Mesh::Mesh(Mesh &&other) noexcept
+: VAO(other.VAO),
+  VBO(other.VBO),
+  EBO(other.EBO),
+  indiceCount(other.indiceCount),
+  vertices(std::move(other.vertices)),
+  indices(std::move(other.indices)),
+  material(std::move(other.material)) {
+
+  other.VAO = 0;
+  other.VBO = 0;
+  other.EBO = 0;
+  other.indiceCount = 0;
+}
+
+Mesh &Mesh::operator=(Mesh &&other) noexcept {
+  if (this == &other) {
+    return *this;
+  }
+
+  glDeleteVertexArrays(1, &VAO);
+  glDeleteBuffers(1, &VBO);
+  glDeleteBuffers(1, &EBO);
+
+  VAO = other.VAO;
+  VBO = other.VBO;
+  EBO = other.EBO;
+  indiceCount = other.indiceCount;
+
+  vertices = std::move(other.vertices);
+  indices = std::move(other.indices);
+  material = std::move(other.material);
+
+  other.VAO = 0;
+  other.VBO = 0;
+  other.EBO = 0;
+  other.indiceCount = 0;
+
+  return *this;
 }

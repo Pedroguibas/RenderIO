@@ -16,6 +16,7 @@
 #include "Texture.h"
 #include "Lights.h"
 #include "Material.h"
+#include "Model.h"
 using std::cout;
 using std::nullopt;
 using std::vector;
@@ -53,46 +54,14 @@ int main() {
   }
 
   glEnable(GL_DEPTH_TEST);
-  glEnable(GL_CULL_FACE);
-  glCullFace(GL_BACK);
-  glFrontFace(GL_CCW);
+  // glEnable(GL_CULL_FACE);
+  // glCullFace(GL_BACK);
+  // glFrontFace(GL_CCW);
 
   glViewport(0, 0, 1280, 720);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
   glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
-
-  MeshFactory mf;
-
-  Mesh cube = mf.box().withUv().withNormals().build();
-  Mesh lamp = mf.box().withUv().withNormals().build();
-  Mesh floor(
-    {Vertex(
-       vec3{-15.0f, 0.0f, 15.0f},
-       nullopt,
-       glm::vec2{0.0f, 0.0f},
-       vec3{0.0f, 1.0f, 0.0f}
-     ),
-     Vertex(
-       vec3{15.0f, 0.0f, 15.0f},
-       nullopt,
-       glm::vec2{5.0f, 0.0f},
-       vec3{0.0f, 1.0f, 0.0f}
-     ),
-     Vertex(
-       vec3{-15.0f, 0.0f, -15.0f},
-       nullopt,
-       glm::vec2{0.0f, 5.0f},
-       vec3{0.0f, 1.0f, 0.0f}
-     ),
-     Vertex(
-       vec3{15.0f, 0.0f, -15.0f},
-       nullopt,
-       glm::vec2{5.0f, 5.0f},
-       vec3{0.0f, 1.0f, 0.0f}
-     )},
-    {0, 1, 2, 2, 1, 3}
-  );
 
   Shader *shader;
   try {
@@ -104,7 +73,7 @@ int main() {
     return -1;
   }
 
-  Camera cam({1.5f, 2.0f, 1.5f});
+  Camera cam({0.0f, 3.0f, 4.0f});
   shader->use();
 
   Texture *groundTex;
@@ -132,7 +101,7 @@ int main() {
 
   DirectionLight light(vec4(1.0f), vec3(-1.0f, -1.0f, -1.0f));
   PointLight pLight(
-    vec4(1.0f, 1.0f, 0.0f, 1.0f), vec3(1.0f, 0.5f, 0.0f), {.constant = 0.6f}
+    vec4(1.0f, 1.0f, 0.0f, 1.0f), vec3(1.0f, 0.5f, 0.0f), {.constant = 0.7f}
   );
   SpotLight sLight(
     vec4(0.2f, 0.5f, 0.8f, 1.0f),
@@ -152,13 +121,48 @@ int main() {
     .emission = {.index = 5, .enabled = true, .mapEnabled = true},
   });
 
+  MeshFactory mf;
+
+  Mesh cube = mf.box().withUv().withNormals().build(box);
+  Mesh lamp = mf.box().withUv().withNormals().build(lampMaterial);
+  Mesh floor(
+    {Vertex(
+       vec3{-15.0f, 0.0f, 15.0f},
+       nullopt,
+       glm::vec2{0.0f, 0.0f},
+       vec3{0.0f, 1.0f, 0.0f}
+     ),
+     Vertex(
+       vec3{15.0f, 0.0f, 15.0f},
+       nullopt,
+       glm::vec2{5.0f, 0.0f},
+       vec3{0.0f, 1.0f, 0.0f}
+     ),
+     Vertex(
+       vec3{-15.0f, 0.0f, -15.0f},
+       nullopt,
+       glm::vec2{0.0f, 5.0f},
+       vec3{0.0f, 1.0f, 0.0f}
+     ),
+     Vertex(
+       vec3{15.0f, 0.0f, -15.0f},
+       nullopt,
+       glm::vec2{5.0f, 5.0f},
+       vec3{0.0f, 1.0f, 0.0f}
+     )},
+    {0, 1, 2, 2, 1, 3},
+    ground
+  );
+
+  Model cube_model("models/miku/source/miku.gltf");
+
   int w_width, w_height;
   while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     float time = glfwGetTime();
 
-    cam.setPosition(vec3(3 * std::cos(time), 3, 3 * std::sin(time)));
-    cam.lookAt(vec3(0.0f));
+    cam.setPosition(vec3(4 * std::cos(time), 3, 4 * std::sin(time)));
+    cam.lookAt(vec3(0.0f, 2.5f, 0.0f));
     glfwGetWindowSize(window, &w_width, &w_height);
 
     shader->use();
@@ -176,18 +180,20 @@ int main() {
     pLight.upload(*shader, "pLight");
     sLight.upload(*shader, "sLight");
 
-    ground.use(*shader);
-    floor.draw();
+    // floor.draw(*shader);
 
-    model = glm::translate(glm::mat4(1.0f), {-1.0f, 0.5f, 0.0f});
-    shader->setMat4("model", model);
-    box.use(*shader);
-    cube.draw();
+    // model = glm::translate(glm::mat4(1.0f), {-1.0f, 0.5f, 0.0f});
+    // shader->setMat4("model", model);
+    // cube.draw(*shader);
 
-    model = glm::translate(glm::mat4(1.0f), {1.0f, 0.5f, 0.0f});
-    shader->setMat4("model", model);
-    lampMaterial.use(*shader);
-    lamp.draw();
+    // model = glm::translate(glm::mat4(1.0f), {1.0f, 0.5f, 0.0f});
+    // shader->setMat4("model", model);
+    // lamp.draw(*shader);
+
+    // shader->setMat4("model", model);
+    model = glm::translate(glm::mat4(1.0f), {1.7f, 0.0f, 0.0f});
+    model = glm::scale(model, glm::vec3(0.8));
+    cube_model.draw(*shader, model);
 
     glfwSwapBuffers(window);
 

@@ -44,7 +44,7 @@ Vertex MeshFactory::BoxBuilder::makeVertex(
   return v;
 }
 
-Mesh MeshFactory::BoxBuilder::build() const {
+Mesh MeshFactory::BoxBuilder::build(const Material &material) const {
   const float x = width * 0.5f;
   const float y = height * 0.5f;
   const float z = depth * 0.5f;
@@ -100,7 +100,7 @@ Mesh MeshFactory::BoxBuilder::build() const {
     );
   }
 
-  return Mesh(vertices, indices);
+  return Mesh(vertices, indices, material);
 }
 
 MeshFactory::BoxBuilder
