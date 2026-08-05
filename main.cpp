@@ -74,6 +74,7 @@ int main() {
   }
 
   Camera cam({0.0f, 3.0f, 4.0f});
+  cam.lookAt({-2.0f, 3.0f, 0.0f});
   shader->use();
 
   Texture *groundTex;
@@ -161,8 +162,8 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     float time = glfwGetTime();
 
-    cam.setPosition(vec3(4 * std::cos(time), 3, 4 * std::sin(time)));
-    cam.lookAt(vec3(0.0f, 2.5f, 0.0f));
+    // cam.setPosition(vec3(4 * std::cos(time), 3, 4 * std::sin(time)));
+    // cam.lookAt(vec3(0.0f, 2.5f, 0.0f));
     glfwGetWindowSize(window, &w_width, &w_height);
 
     shader->use();
