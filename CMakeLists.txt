@@ -39,6 +39,7 @@ add_executable(renderIO
 	src/Lights.cpp
 	src/Material.cpp
 	src/Model.cpp
+	src/inputHandler.cpp
 )
 
 target_include_directories(renderIO PRIVATE

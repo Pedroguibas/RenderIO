@@ -17,6 +17,7 @@
 #include "Lights.h"
 #include "Material.h"
 #include "Model.h"
+#include "InputHandler.h"
 using std::cout;
 using std::nullopt;
 using std::vector;
@@ -26,6 +27,7 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 }
 
 int main() {
+  const int DEFAULT_INPUTSET = 0;
 
   if (!glfwInit()) {
     cout << "Failed to initialize GLFW\n";
@@ -47,6 +49,16 @@ int main() {
 
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1);
+  InputHandler inputs(DEFAULT_INPUTSET, window);
+
+  bool pressed = false;
+  inputs.listen(GLFW_PRESS, GLFW_KEY_SPACE, [&]() {
+    if (!pressed) {
+      cout << "clicked";
+      pressed = true;
+    }
+  });
+  inputs.listen(GLFW_RELEASE, GLFW_KEY_SPACE, [&]() { pressed = false; });
 
   if (!gladLoadGL(glfwGetProcAddress)) {
     cout << "Failed to load GLAD\n";
@@ -74,7 +86,6 @@ int main() {
   }
 
   Camera cam({0.0f, 3.0f, 4.0f});
-  cam.lookAt({-2.0f, 3.0f, 0.0f});
   shader->use();
 
   Texture *groundTex;
@@ -162,8 +173,11 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     float time = glfwGetTime();
 
-    // cam.setPosition(vec3(4 * std::cos(time), 3, 4 * std::sin(time)));
-    // cam.lookAt(vec3(0.0f, 2.5f, 0.0f));
+    glfwPollEvents();
+    inputs.handleInputs();
+
+    cam.setPosition(vec3(4 * std::cos(time), 3, 4 * std::sin(time)));
+    cam.lookAt(vec3(0.0f, 2.5f, 0.0f));
     glfwGetWindowSize(window, &w_width, &w_height);
 
     shader->use();
@@ -197,8 +211,6 @@ int main() {
     cube_model.draw(*shader, model);
 
     glfwSwapBuffers(window);
-
-    glfwPollEvents();
   }
 
   glfwDestroyWindow(window);
