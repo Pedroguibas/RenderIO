@@ -7,9 +7,15 @@
 #include <glm/glm.hpp>
 #include <stdexcept>
 
-Model::Model(std::vector<Mesh> meshes)
-: meshes(std::move(meshes)),
-  directory(NULL) {}
+Model::Model(std::vector<Mesh> meshes) : meshes(std::move(meshes)) {
+  root.modelTransform = glm::mat4{1.0f};
+
+  root.meshIndices.reserve(meshes.size());
+
+  for (std::size_t i = 0; i < meshes.size(); i++) {
+    root.meshIndices.push_back(static_cast<unsigned int>(i));
+  }
+}
 
 Model::Model(const std::filesystem::path &path) : directory(path) {
   loadModel(path);
@@ -22,8 +28,8 @@ std::vector<Mesh> &Model::getMeshes() noexcept {
   return meshes;
 }
 
-void Model::draw(Shader &shader) const {
-  drawNode(root, shader);
+void Model::draw(Shader &shader, const glm::mat4 &transform) const {
+  drawNode(root, shader, transform);
 }
 
 void Model::loadModel(const std::filesystem::path &path) {
@@ -55,6 +61,8 @@ ModelNode Model::processNode(
   const aiNode *node, const aiScene *scene, const glm::mat4 &transform
 ) {
   ModelNode modelNode;
+  modelNode.meshIndices.reserve(node->mNumMeshes);
+  modelNode.children.reserve(node->mNumChildren);
   for (unsigned int i = 0; i < node->mNumMeshes; i++) {
     const unsigned int meshIndex = node->mMeshes[i];
     const aiMesh *mesh = scene->mMeshes[meshIndex];
@@ -63,15 +71,16 @@ ModelNode Model::processNode(
     modelNode.meshIndices.push_back(meshes.size() - 1);
   }
 
-  modelNode.transform = transform * Model::toGlmMat4(node->mTransformation);
+  modelNode.modelTransform =
+    transform * Model::toGlmMat4(node->mTransformation);
 
   for (unsigned int i = 0; i < node->mNumChildren; i++) {
     modelNode.children.push_back(
-      processNode(node->mChildren[i], scene, modelNode.transform)
+      processNode(node->mChildren[i], scene, modelNode.modelTransform)
     );
   }
 
-  return std::move(modelNode);
+  return modelNode;
 }
 
 Mesh Model::processMesh(const aiMesh *mesh, const aiScene *scene) {
@@ -102,6 +111,7 @@ Mesh Model::processMesh(const aiMesh *mesh, const aiScene *scene) {
     vertices.push_back(vertex);
   }
 
+  indices.reserve(mesh->mNumFaces);
   for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
     const aiFace &face = mesh->mFaces[i];
 
@@ -115,23 +125,23 @@ Mesh Model::processMesh(const aiMesh *mesh, const aiScene *scene) {
   return Mesh(std::move(vertices), std::move(indices), std::move(material));
 }
 
-void Model::drawNode(const ModelNode &node, Shader &shader) const {
-  shader.setMat4("model", node.transform);
+void Model::drawNode(
+  const ModelNode &node, Shader &shader, const glm::mat4 &transform
+) const {
+  shader.setMat4("model", transform * node.modelTransform);
 
   for (auto idx : node.meshIndices)
     meshes[idx].draw(shader);
 
   for (const auto &n : node.children)
-    drawNode(n, shader);
+    drawNode(n, shader, transform);
 }
 
 glm::mat4 Model::toGlmMat4(const aiMatrix4x4t<float> &m) {
-  return std::move(
-    glm::mat4{
-      {m.a1, m.b1, m.c1, m.d1},
-      {m.a2, m.b2, m.c2, m.d2},
-      {m.a3, m.b3, m.c3, m.d3},
-      {m.a4, m.b4, m.c4, m.d4},
-    }
-  );
+  return glm::mat4{
+    {m.a1, m.b1, m.c1, m.d1},
+    {m.a2, m.b2, m.c2, m.d2},
+    {m.a3, m.b3, m.c3, m.d3},
+    {m.a4, m.b4, m.c4, m.d4},
+  };
 }

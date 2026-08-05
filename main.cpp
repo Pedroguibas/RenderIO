@@ -54,9 +54,9 @@ int main() {
   }
 
   glEnable(GL_DEPTH_TEST);
-  glEnable(GL_CULL_FACE);
-  glCullFace(GL_BACK);
-  glFrontFace(GL_CCW);
+  // glEnable(GL_CULL_FACE);
+  // glCullFace(GL_BACK);
+  // glFrontFace(GL_CCW);
 
   glViewport(0, 0, 1280, 720);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -73,7 +73,7 @@ int main() {
     return -1;
   }
 
-  Camera cam({1.5f, 2.0f, 1.5f});
+  Camera cam({0.0f, 3.0f, 4.0f});
   shader->use();
 
   Texture *groundTex;
@@ -161,8 +161,8 @@ int main() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     float time = glfwGetTime();
 
-    cam.setPosition(vec3(3 * std::cos(time), 3, 3 * std::sin(time)));
-    cam.lookAt(vec3(0.0f, 3.5f, 0.0f));
+    cam.setPosition(vec3(4 * std::cos(time), 3, 4 * std::sin(time)));
+    cam.lookAt(vec3(0.0f, 2.5f, 0.0f));
     glfwGetWindowSize(window, &w_width, &w_height);
 
     shader->use();
@@ -190,9 +190,10 @@ int main() {
     // shader->setMat4("model", model);
     // lamp.draw(*shader);
 
-    // model = glm::translate(glm::mat4(1.0f), {0.0f, 1.5f, 0.0f});
     // shader->setMat4("model", model);
-    cube_model.draw(*shader);
+    model = glm::translate(glm::mat4(1.0f), {1.7f, 0.0f, 0.0f});
+    model = glm::scale(model, glm::vec3(0.8));
+    cube_model.draw(*shader, model);
 
     glfwSwapBuffers(window);
 
