@@ -19,8 +19,12 @@ class Camera {
     float nearPlane = 0.1f;
     float farPlane = 100.0f;
 
+    float speed = 0.5f;
+    float mouseSensitivity = 0.0003f;
+
     void setDirection(const vec3 &dir);
     void updateVectors();
+    const glm::vec3 calculateMovement(glm::vec3 movement);
 
   public:
     Camera();
@@ -34,4 +38,16 @@ class Camera {
 
     mat4 getView() const;
     mat4 getPerspective(const float aspect) const;
+
+    float getSpeed() const noexcept;
+    void setSpeed(float speed) noexcept;
+
+    void moveForward(float deltaTime) noexcept;
+    void moveBackwards(float deltaTime) noexcept;
+    void moveRight(float deltaTime) noexcept;
+    void moveLeft(float deltaTime) noexcept;
+    void moveUp(float deltaTime) noexcept;
+    void moveDown(float deltaTime) noexcept;
+
+    void rotate(float x, float y) noexcept;
 };
