@@ -19,7 +19,8 @@ class Camera {
     float nearPlane = 0.1f;
     float farPlane = 100.0f;
 
-    float speed = 1.0f;
+    float speed = 0.5f;
+    float mouseSensitivity = 0.0003f;
 
     void setDirection(const vec3 &dir);
     void updateVectors();
@@ -47,4 +48,6 @@ class Camera {
     void moveLeft(float deltaTime) noexcept;
     void moveUp(float deltaTime) noexcept;
     void moveDown(float deltaTime) noexcept;
+
+    void rotate(float x, float y) noexcept;
 };

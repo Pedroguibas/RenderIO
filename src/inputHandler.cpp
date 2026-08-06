@@ -12,7 +12,7 @@ bool EventAction::operator==(int id) const {
   return this->id == id;
 }
 
-InputHandler::InputHandler(int defaultSetKey, GLFWwindow *window)
+InputHandler::InputHandler(GLFWwindow *window, int defaultSetKey)
 : window(window) {
   setActiveSet(defaultSetKey);
 }
@@ -140,45 +140,24 @@ void MouseInputHandler::cursorCallback(
     input->getMouseActions().cursor_action(xPosition, yPosition);
 }
 
-void MouseInputHandler::processMouseButtons(
-  int glButton, int glAction, MouseButtonAction action
+void MouseInputHandler::processButtonEvent(
+  int glButton, int glAction, int glMods, MouseButtonAction actions
 ) {
-  const bool currentState = glAction == GLFW_PRESS;
+  ButtonEventEnum event;
 
-  const auto previousIterator = previousButtonStates.find(glButton);
+  if (glAction == GLFW_PRESS)
+    event = ButtonEventEnum::Press;
+  else if (glAction == GLFW_RELEASE)
+    event = ButtonEventEnum::Release;
+  else
+    return;
 
-  const bool previousState = previousIterator != previousButtonStates.end()
-                               ? previousIterator->second
-                               : false;
+  const auto iterator = actions.find(event);
 
-  for (const auto &a : action) {
+  if (iterator != actions.end() && iterator->second)
+    iterator->second(glMods);
 
-    bool shouldExecute = false;
-    switch (a.first) {
-    case ButtonEventEnum::Hold:
-      if (currentState)
-        shouldExecute = true;
-
-      break;
-
-    case ButtonEventEnum::Press:
-      if (currentState && !previousState)
-        shouldExecute = true;
-
-      break;
-
-    case ButtonEventEnum::Release:
-      if (previousState && !currentState)
-        shouldExecute = true;
-
-      break;
-    }
-
-    if (shouldExecute && a.second)
-      a.second();
-
-    previousButtonStates[glButton] = currentState;
-  }
+  previousButtonStates[glButton] = glAction == GLFW_PRESS;
 }
 
 void MouseInputHandler::buttonsCallback(
@@ -188,17 +167,29 @@ void MouseInputHandler::buttonsCallback(
     static_cast<MouseInputHandler *>(glfwGetWindowUserPointer(window));
 
   if (button == GLFW_MOUSE_BUTTON_LEFT) {
-    input->processMouseButtons(
-      GLFW_MOUSE_BUTTON_LEFT, action, input->getMouseActions().m1_action
+    input->processButtonEvent(
+      GLFW_MOUSE_BUTTON_LEFT, action, mods, input->getMouseActions().m1_action
     );
   } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
-    input->processMouseButtons(
-      GLFW_MOUSE_BUTTON_RIGHT, action, input->getMouseActions().m2_action
+    input->processButtonEvent(
+      GLFW_MOUSE_BUTTON_RIGHT, action, mods, input->getMouseActions().m2_action
     );
   } else if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
-    input->processMouseButtons(
-      GLFW_MOUSE_BUTTON_MIDDLE, action, input->getMouseActions().m3_action
+    input->processButtonEvent(
+      GLFW_MOUSE_BUTTON_MIDDLE, action, mods, input->getMouseActions().m3_action
     );
+  }
+}
+void MouseInputHandler::processHeldButton(
+  int button, const MouseButtonAction &actions
+) {
+  if (glfwGetMouseButton(window, button) != GLFW_PRESS)
+    return;
+
+  const auto iterator = actions.find(ButtonEventEnum::Hold);
+
+  if (iterator != actions.end() && iterator->second) {
+    iterator->second(0);
   }
 }
 
@@ -209,7 +200,7 @@ void MouseInputHandler::scrollCallback(
     static_cast<MouseInputHandler *>(glfwGetWindowUserPointer(window));
 
   if (input->getMouseActions().scroll_action)
-    input->getMouseActions().scroll_action(offsetY);
+    input->getMouseActions().scroll_action(offsetX, offsetY);
 }
 
 void MouseInputHandler::showCursor() noexcept {
@@ -224,13 +215,13 @@ void MouseInputHandler::hideCursor() noexcept {
 void MouseInputHandler::setCursorAction(CursorAction action) {
   inputSets[activeSet].cursor_action = std::move(action);
 }
-void MouseInputHandler::setM1Action(ButtonEventEnum event, Action action) {
+void MouseInputHandler::setM1Action(ButtonEventEnum event, ClickAction action) {
   inputSets[activeSet].m1_action.try_emplace(event, std::move(action));
 }
-void MouseInputHandler::setM2Action(ButtonEventEnum event, Action action) {
+void MouseInputHandler::setM2Action(ButtonEventEnum event, ClickAction action) {
   inputSets[activeSet].m2_action.try_emplace(event, std::move(action));
 }
-void MouseInputHandler::setM3Action(ButtonEventEnum event, Action action) {
+void MouseInputHandler::setM3Action(ButtonEventEnum event, ClickAction action) {
   inputSets[activeSet].m3_action.try_emplace(event, std::move(action));
 }
 void MouseInputHandler::setScrollAction(ScrollAction action) {
@@ -251,4 +242,10 @@ void MouseInputHandler::setActiveSet(int set) {
 
 const MouseActionSettings &MouseInputHandler::getMouseActions() const {
   return inputSets.at(activeSet);
+}
+
+void MouseInputHandler::handleInputs() {
+  processHeldButton(GLFW_MOUSE_BUTTON_LEFT, inputSets[activeSet].m1_action);
+  processHeldButton(GLFW_MOUSE_BUTTON_RIGHT, inputSets[activeSet].m2_action);
+  processHeldButton(GLFW_MOUSE_BUTTON_MIDDLE, inputSets[activeSet].m3_action);
 }

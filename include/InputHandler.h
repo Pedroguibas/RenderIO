@@ -55,7 +55,7 @@ class InputHandler {
     GLFWwindow *window;
 
   public:
-    InputHandler(int defaultSetKey, GLFWwindow *window);
+    InputHandler(GLFWwindow *window, int defaultSetKey = 0);
 
     void createInputSet(int key);
     void deleteInputSet(int key);
@@ -77,9 +77,10 @@ class InputHandler {
 };
 
 using CursorAction = std::function<void(double x, double y)>;
-using ScrollAction = std::function<void(double offset)>;
+using ScrollAction = std::function<void(double offsetX, double offsetY)>;
+using ClickAction = std::function<void(int mods)>;
 
-using MouseButtonAction = std::unordered_map<ButtonEventEnum, Action>;
+using MouseButtonAction = std::unordered_map<ButtonEventEnum, ClickAction>;
 
 struct MouseActionSettings {
     CursorAction cursor_action;
@@ -105,21 +106,24 @@ class MouseInputHandler {
 
     static void
     scrollCallback(GLFWwindow *window, double offsetX, double offsetY);
+    void processHeldButton(int button, const MouseButtonAction &actions);
 
   public:
-    MouseInputHandler(GLFWwindow *window, int defaultSet);
+    MouseInputHandler(GLFWwindow *window, int defaultSet = 0);
 
     void setActiveSet(int set);
     const MouseActionSettings &getMouseActions() const;
-    void
-    processMouseButtons(int glButton, int glAction, MouseButtonAction action);
+    void processButtonEvent(
+      int glButton, int glAction, int glMods, MouseButtonAction actions
+    );
+    void handleInputs();
 
     void showCursor() noexcept;
     void hideCursor() noexcept;
 
     void setCursorAction(CursorAction action);
-    void setM1Action(ButtonEventEnum event, Action action);
-    void setM2Action(ButtonEventEnum event, Action action);
-    void setM3Action(ButtonEventEnum event, Action action);
+    void setM1Action(ButtonEventEnum event, ClickAction action);
+    void setM2Action(ButtonEventEnum event, ClickAction action);
+    void setM3Action(ButtonEventEnum event, ClickAction action);
     void setScrollAction(ScrollAction action);
 };

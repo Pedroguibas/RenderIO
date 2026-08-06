@@ -3,6 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <memory>
 #include <cmath>
+#include <algorithm>
 using std::cos;
 using std::sin;
 
@@ -89,4 +90,13 @@ void Camera::moveUp(float deltaTime) noexcept {
 }
 void Camera::moveDown(float deltaTime) noexcept {
   position += calculateMovement(glm::vec3(0.0f, -1.0f, 0.0f)) * deltaTime;
+}
+
+void Camera::rotate(float x, float y) noexcept {
+  yaw += x * mouseSensitivity;
+  pitch += -y * mouseSensitivity;
+
+  pitch = std::clamp(pitch, glm::radians(-89.0f), glm::radians(89.0f));
+
+  updateVectors();
 }

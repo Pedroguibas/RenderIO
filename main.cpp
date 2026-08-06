@@ -28,6 +28,7 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
 
 int main() {
   const int DEFAULT_INPUTSET = 0;
+  const int DEFAULT_MOUSE_INPUTSET = 0;
 
   if (!glfwInit()) {
     cout << "Failed to initialize GLFW\n";
@@ -49,7 +50,8 @@ int main() {
 
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1);
-  InputHandler inputs(DEFAULT_INPUTSET, window);
+  InputHandler inputs(window, DEFAULT_INPUTSET);
+  MouseInputHandler mouseInputs(window, DEFAULT_MOUSE_INPUTSET);
 
   if (!gladLoadGL(glfwGetProcAddress)) {
     cout << "Failed to load GLAD\n";
@@ -157,28 +159,40 @@ int main() {
     ground
   );
 
-  Model cube_model("models/miku/source/miku.gltf");
+  Model miku("models/miku/source/miku.gltf");
 
   float deltaTime = glfwGetTime();
 
-  inputs.listen(KeyboardEventEnum::Hold, GLFW_KEY_SPACE, [&]() {
+  inputs.listen(ButtonEventEnum::Hold, GLFW_KEY_SPACE, [&]() {
     cam.moveUp(deltaTime);
   });
-  inputs.listen(KeyboardEventEnum::Hold, GLFW_KEY_LEFT_SHIFT, [&]() {
+  inputs.listen(ButtonEventEnum::Hold, GLFW_KEY_LEFT_SHIFT, [&]() {
     cam.moveDown(deltaTime);
   });
-  inputs.listen(KeyboardEventEnum::Hold, GLFW_KEY_W, [&]() {
+  inputs.listen(ButtonEventEnum::Hold, GLFW_KEY_W, [&]() {
     cam.moveForward(deltaTime);
   });
-  inputs.listen(KeyboardEventEnum::Hold, GLFW_KEY_A, [&]() {
+  inputs.listen(ButtonEventEnum::Hold, GLFW_KEY_A, [&]() {
     cam.moveLeft(deltaTime);
   });
-  inputs.listen(KeyboardEventEnum::Hold, GLFW_KEY_S, [&]() {
+  inputs.listen(ButtonEventEnum::Hold, GLFW_KEY_S, [&]() {
     cam.moveBackwards(deltaTime);
   });
-  inputs.listen(KeyboardEventEnum::Hold, GLFW_KEY_D, [&]() {
+  inputs.listen(ButtonEventEnum::Hold, GLFW_KEY_D, [&]() {
     cam.moveRight(deltaTime);
   });
+  inputs.listen(ButtonEventEnum::Press, GLFW_KEY_ESCAPE, [&]() {
+    mouseInputs.showCursor();
+  });
+  mouseInputs.setCursorAction([&](float x, float y) {
+    static float previousX = 0.0f, previousY = 0.0f;
+
+    cam.rotate(x - previousX, y - previousY);
+
+    previousX = x;
+    previousY = y;
+  });
+  mouseInputs.hideCursor();
 
   int w_width, w_height;
   while (!glfwWindowShouldClose(window)) {
@@ -187,8 +201,7 @@ int main() {
 
     glfwPollEvents();
     inputs.handleInputs();
-
-    cam.lookAt(vec3(0.0f, 2.5f, 0.0f));
+    mouseInputs.handleInputs();
     glfwGetWindowSize(window, &w_width, &w_height);
 
     shader->use();
@@ -206,7 +219,7 @@ int main() {
     pLight.upload(*shader, "pLight");
     sLight.upload(*shader, "sLight");
 
-    // floor.draw(*shader);
+    floor.draw(*shader);
 
     // model = glm::translate(glm::mat4(1.0f), {-1.0f, 0.5f, 0.0f});
     // shader->setMat4("model", model);
@@ -219,7 +232,7 @@ int main() {
     // shader->setMat4("model", model);
     model = glm::translate(glm::mat4(1.0f), {1.7f, 0.0f, 0.0f});
     model = glm::scale(model, glm::vec3(0.8));
-    cube_model.draw(*shader, model);
+    miku.draw(*shader, model);
 
     glfwSwapBuffers(window);
   }
