@@ -2,8 +2,17 @@
 
 #include <glm/glm.hpp>
 #include <memory>
+#include <variant>
+
 #include "Texture.h"
 #include "Shader.h"
+
+struct DiffuseOptions {
+    unsigned int diffuseIndex = 0;
+    glm::vec3 baseColor = glm::vec3(1.0f);
+
+    bool mapEnabled;
+};
 
 struct SpecularOptions {
     unsigned int index = 1;
@@ -21,46 +30,74 @@ struct EmissionOptions {
     bool mapEnabled = false;
 };
 
-struct ShaderMaterialUniformOptions {
+struct MetalicOptions {};
+
+struct RoughnessOptions {};
+
+struct NormalOptions {};
+
+struct AmbientOcclusionOptions {};
+
+struct PhongOptions {
+    DiffuseOptions diffuse = {};
+    SpecularOptions specular = {};
+    EmissionOptions emission = {};
+    PhongMaterialShaderStruct shaderStruct = {};
+};
+
+struct PBROptions {
+    DiffuseOptions diffuse = {};
+    EmissionOptions emission = {};
+    MetalicOptions metalic = {};
+    RoughnessOptions roughness = {};
+    NormalOptions normal = {};
+    AmbientOcclusionOptions ao = {};
+};
+
+struct PhongMaterialShaderStruct {
     string name = "material";
+    string diffuseRaical = "diffuse";
     string specularRadical = "specular";
     string emissionRadical = "emission";
 };
 
-struct MaterialBuilderOptions {
-    unsigned int diffuseIndex = 0;
-    SpecularOptions specular = {};
-    EmissionOptions emission = {};
-    ShaderMaterialUniformOptions shaderStruct = {};
+struct PBRMaterialShaderStruct {
+    string name = "material";
+    string diffuseRaical = "diffuse";
+    string emissionRadical = "emission";
+    string metalicRadical = "metalic";
+    string roughnessRadical = "roughness";
+    string normalRadical = "normal";
+    string ambientOcclusionRadical = "ambientOcclusion";
 };
+
+using ShaderOptions = std::variant<PBROptions, PhongOptions>;
+using ShaderStructOptions =
+  std::variant<PBRMaterialShaderStruct, PhongMaterialShaderStruct>;
 
 class Material {
   private:
-    unsigned int diffuseIndex;
-    EmissionOptions emission;
-    SpecularOptions specular;
+    bool pbr;
+    ShaderOptions options;
+    ShaderStructOptions shaderStruct;
 
-    string diffuseBase;
-    string emissionBase;
-    string specularBase;
+    Material(const ShaderOptions &options, ShaderStructOptions shaderStruct);
 
   public:
-    Material(const MaterialBuilderOptions &options);
+    static Material
+    createPBR(PBROptions options, PBRMaterialShaderStruct shaderStruct);
+    static Material
+    createPhong(PhongOptions options, PhongMaterialShaderStruct shaderStruct);
 
     void setDiffuseIndex(unsigned int index) noexcept;
     unsigned int getDiffuseIndex() const noexcept;
 
-    void setShaderMaterialUniformOptions(
-      const ShaderMaterialUniformOptions &shaderStruct
-    );
+    void setShaderStruct(const ShaderStructOptions &shaderStruct);
 
-    const SpecularOptions &getSpecularOptions() const noexcept;
-    const EmissionOptions &getEmissionOptions() const noexcept;
-    SpecularOptions &getSpecularOptions() noexcept;
-    EmissionOptions &getEmissionOptions() noexcept;
+    const ShaderOptions &getShaderOptions() const noexcept;
+    ShaderOptions &getShaderOptions() noexcept;
 
-    void setSpecularOptions(const SpecularOptions &options);
-    void setEmissionOptions(const EmissionOptions &options);
+    void setShaderOptions(const ShaderOptions &options);
 
     void use(Shader &shader) const;
 };
