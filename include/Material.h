@@ -9,7 +9,7 @@
 
 struct AlbedoOptions {
     unsigned int index = 0;
-    glm::vec3 baseColor = glm::vec3(1.0f);
+    glm::vec4 baseColor = glm::vec4(1.0f);
 
     bool mapEnabled = false;
 };

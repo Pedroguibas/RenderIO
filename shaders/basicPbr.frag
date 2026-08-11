@@ -12,18 +12,15 @@ in vec2 vUv;
   in vec3 vNormal;
 #endif
 
-struct Specularity {
-  sampler2D texture;
-  float intensity;
-  float shininess;
-  vec3 color;
-  bool enabled;
-  bool mapEnabled;
-};
-
 struct Albedo {
   sampler2D texture;
   vec4 color;
+  bool mapEnabled;
+};
+
+struct Metallic {
+  sampler2D texture;
+  float value;
   bool mapEnabled;
 };
 
@@ -34,9 +31,16 @@ struct Emission {
   bool mapEnabled;
 };
 
+struct Roughness {
+  sampler2D texture;
+  float value;
+  bool mapEnabled;
+}
+
 struct Material {
   Albedo albedo;
-  Specularity specular;
+  Metallic metallic;
+  Roughness roughness;
   Emission emission;
 };
 
@@ -201,24 +205,20 @@ vec3 calcSpotLight(
 }
 
 void main() {
-  vec4 baseColor = material.albedo.color;
+  vec3 baseColor = material.albedo.baseColor;
+
   vec3 normal = vec3(0.0);
   float reflectivity = 1.0;
   vec3 emission = vec3(0.0);
 
-  #ifdef HAS_UV
-  if (material.albedo.mapEnabled)
-    baseColor = texture(material.diffuse, vUv);
-    
+  baseColor = texture(material.diffuse, vUv);
   if (material.specular.enabled && material.specular.mapEnabled)
     reflectivity = texture(material.specular.texture, vUv).r;
 
   if (material.emission.mapEnabled && material.emission.enabled)
     emission = texture(material.emission.texture, vUv).rgb * material.emission.intensity;
 
-  #elif defined(HAS_COLOR)
   baseColor = vColor;
-  #endif
 
   vec3 finalColor = baseColor.rgb;
   #ifdef HAS_NORMAL  

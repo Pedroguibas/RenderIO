@@ -185,7 +185,7 @@ void Material::use(Shader &shader) const {
     auto options = std::get<PBRShaderOptions>(shaderOptions);
 
     shader.setInt(structVal.albedoRadical + "texture", options.albedo.index);
-    shader.setVec3(
+    shader.setVec4(
       structVal.albedoRadical + "baseColor", options.albedo.baseColor
     );
     shader.setBool(
