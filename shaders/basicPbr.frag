@@ -4,13 +4,10 @@
 in vec4 vColor;
 #endif
 
-#ifdef HAS_UV
 in vec2 vUv;
-#endif
+in vec3 vNormal;
 
-#ifdef HAS_NORMAL
-  in vec3 vNormal;
-#endif
+const float PI = 3.14159265359;
 
 struct Albedo {
   sampler2D texture;
@@ -35,7 +32,7 @@ struct Roughness {
   sampler2D texture;
   float value;
   bool mapEnabled;
-}
+};
 
 struct Material {
   Albedo albedo;
@@ -83,42 +80,12 @@ in vec3 fragPos;
 
 out vec4 FragColor;
 
-vec3 calcSpecularity(
-  vec3 viewDir,
-  vec3 dirToLight,
-  vec3 normal,
-  float reflectivity,
-  vec3 lightColor
-) {
-  if (!material.specular.enabled)
-    return vec3(0.0);
-
-  float normalLightDot = dot(normal, dirToLight);
-
-  if (normalLightDot <= 0.0)
-      return vec3(0.0);
-
-  vec3 reflectedDir = reflect(-dirToLight, normal);
-
-  float specularStrength = pow(
-    max(dot(viewDir, reflectedDir), 0.0),
-    material.specular.shininess
-  );
-  return material.specular.intensity *
-    reflectivity *
-    specularStrength *
-    material.specular.color *
-    lightColor;
-}
-
 float calcAttenuation(
-  vec3 fragmentToLight,
+  float distanceToLight,
   float constant,
   float linear,
   float quadratic
 ) {
-  float distanceToLight = length(fragmentToLight);
-
   return 1.0 / (
     constant +
     linear * distanceToLight +
@@ -126,112 +93,135 @@ float calcAttenuation(
   );
 }
 
-vec3 calcDirectionLight(
-  DirectionLight light,
-  vec3 normal,
-  vec3 viewDir,
-  float reflectivity,
-  vec3 baseColor
+float distributionGGX(
+  vec3 N,
+  vec3 H,
+  float roughness
 ) {
-  vec3 dirToLight = normalize(-light.direction);
-  float diffuseStrength = max(dot(normal, dirToLight), 0.0);
+  float a = roughness * roughness;
+  float a2 = a * a;
 
-  vec3 ambient = ambientStrength * light.color.rgb;
+  float NdotH = max(dot(N, H), 0.0);
+  float NdotH2 = NdotH * NdotH;
 
-  vec3 diffuse = diffuseStrength * light.color.rgb;
+  float numerator = a2;
 
-  vec3 specular = calcSpecularity(viewDir, dirToLight, normal, reflectivity, light.color.rgb);
+  float denominator = NdotH2 * (a2 - 1.0) + 1.0;
 
-  return baseColor * (ambient + diffuse) + specular;
+  denominator = PI * denominator * denominator;
+
+  return numerator / max(denominator, 0.0001);
+}
+
+float geometrySchlickGGX(
+  float NdotV,
+  float roughness
+) {
+  float r = roughness + 1.0;
+  float k = (r * r) / 8.0;
+
+  float numerator = NdotV;
+  float denominator = NdotV * (1.0 - k) + k;
+
+  return numerator / denominator;
+}
+
+float gemoetrySmith(
+  vec3 N,
+  vec3 V,
+  vec3 L,
+  float roughness
+) {
+  float NdotV = max(dot(N, V), 0.0);
+  float NdotL = max(dot(N, L), 0.0);
+
+  float ggxV = geometrySchlickGGX(NdotV, roughness);
+  float ggxL = geometrySchlickGGX(NdotL, roughness);
+
+  return ggxV * ggxL;
+}
+
+vec3 fresnelSchlick(
+  float cosTheta,
+  vec3 F0
+) {
+  return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 vec3 calcPointLight(
   PointLight light,
-  vec3 normal,
-  vec3 viewDir,
-  float reflectivity,
-  vec3 baseColor
+  vec3 baseColor,
+  float metallic,
+  float roughness,
+  vec3 N,
+  vec3 V
 ) {
-  vec3 fragmentToLight = light.position - fragPos;
+  vec3 F0 = vec3(0.04);
+  F0 = mix(F0, baseColor, metallic);
 
-  vec3 dirToLight = normalize(fragmentToLight);
+  vec3 L = normalize(light.position - fragPos);
 
-  float diffuseStrength = max(dot(normal, dirToLight), 0.0);
+  vec3 H = normalize(V + L);
 
-  vec3 diffuse = diffuseStrength * light.color.rgb;
+  float distanceToLight = length(light.position - fragPos);
 
-  vec3 specular = calcSpecularity(viewDir, dirToLight, normal, reflectivity, light.color.rgb);
+  float attenuation = calcAttenuation(distanceToLight, light.constant, light.linear, light.quadratic);
 
-  float attenuation = calcAttenuation(fragmentToLight, light.constant, light.linear, light.quadratic);
+  float radiance = light.color * attenuation;
 
-  return (baseColor.rgb * diffuse + specular) * attenuation;
-}
+  float D = distributionGGX(N, H, roughness);
 
-vec3 calcSpotLight(
-  SpotLight light,
-  vec3 normal,
-  vec3 viewDir,
-  float reflectivity,
-  vec3 baseColor
-) {
-  vec3 fragmentToLight = light.position - fragPos;
+  float G = gemoetrySmith(N, V, L, roughness);
 
-  vec3 dirToLight = normalize(fragmentToLight);
-
-  float diffuseStrength = max(dot(normal, dirToLight), 0.0);
-
-  vec3 diffuse = diffuseStrength * light.color.rgb;
-
-  vec3 specular = calcSpecularity(viewDir, dirToLight, normal, reflectivity, light.color.rgb);
-
-  float attenuation = calcAttenuation(fragmentToLight, light.constant, light.linear, light.quadratic);
-
-  vec3 lightToFrag = normalize(fragPos - light.position);
-
-  float theta = dot(
-    lightToFrag,
-    normalize(light.direction)
+  vec3 F = fresnelSchlick(
+    max(dot(H, V), 0.0),
+    F0
   );
 
-  float epsilon = light.innerCutoff - light.outerCutoff;
-
-  float intensity = clamp(
-    (theta - light.outerCutoff) / epsilon,
-    0.0,
-    1.0
+  vec3 specular = (D * G * F) / (
+    4.0 
+    * max(dot(N, V), 0.0)
+    * max(dot(N, L), 0.0)
+    + 0.0001
   );
 
-  return (baseColor * diffuse + specular) * attenuation * intensity;
+  vec3 ks = F;
+  vec3 kD = vec3(1.0) - ks;
+
+  float NdotL = max(dot(N, L), 0.0);
+
+  float lo = (
+    kD * baseColor / PI + specular
+  )
+  * radiance
+  * NdotL;
+
+  vec3 ambient = ambientStrength * baseColor;
+
+  return ambient + Lo;
 }
 
-void main() {
-  vec3 baseColor = material.albedo.baseColor;
+void maio() {
+  vec3 baseColor = material.albedo.color.rgb;
+  float metallic = material.metallic.value;
+  float roughness = material.roughness.value;
 
-  vec3 normal = vec3(0.0);
-  float reflectivity = 1.0;
-  vec3 emission = vec3(0.0);
+  if (material.albedo.mapEnabled)
+    baseColor *= texture(material.albedo.texture, vUv).rgb;
 
-  baseColor = texture(material.diffuse, vUv);
-  if (material.specular.enabled && material.specular.mapEnabled)
-    reflectivity = texture(material.specular.texture, vUv).r;
+  if (material.metallic.mapEnabled)
+    metallic *= texture(material.metallic.texture, vUv).r;
 
-  if (material.emission.mapEnabled && material.emission.enabled)
-    emission = texture(material.emission.texture, vUv).rgb * material.emission.intensity;
+  if (material.roughness.mapEnabled)
+    roughness *= texture(material.roughness.texture, vUv).r;
 
-  baseColor = vColor;
+  metallic = clamp(metallic, 0.0, 1.0);
+  roughness = clamp(roughness, 0.04, 1.0);
 
-  vec3 finalColor = baseColor.rgb;
-  #ifdef HAS_NORMAL  
-    normal = vNormal;
-    vec3 normalizedNormal = normalize(normal);
-    vec3 viewDir = normalize(cameraPos - fragPos);
+  vec3 N = normalize(vNormal);
+  vec3 V = normalize(cameraPos - fragPos);
 
-    finalColor = calcDirectionLight(light, normalizedNormal, viewDir, reflectivity, baseColor.rgb);
+  baseColor = calcPointLight(pLight, baseColor, metallic, roughness, N, V);
 
-    finalColor += calcPointLight(pLight, normalizedNormal, viewDir, reflectivity, baseColor.rgb);
-
-    finalColor += calcSpotLight(sLight, normalizedNormal, viewDir, reflectivity, baseColor.rgb);
-  #endif
-
-  FragColor = vec4(finalColor + emission, baseColor.a);
+  FragColor = (baseColor, material.albedo.color.a);
 }

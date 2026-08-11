@@ -120,7 +120,7 @@ Mesh Model::processMesh(const aiMesh *mesh, const aiScene *scene) {
     }
   }
 
-  Material material({});
+  Material material = Material::createPhong({});
 
   return Mesh(std::move(vertices), std::move(indices), std::move(material));
 }

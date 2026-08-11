@@ -105,11 +105,11 @@ class Material {
   public:
     static Material createPBR(
       const PBRShaderOptions &shaderOptions,
-      PBRMaterialShaderStruct shaderStruct
+      PBRMaterialShaderStruct shaderStruct = {}
     );
     static Material createPhong(
       const PhongShaderOptions &shaderOptions,
-      PhongMaterialShaderStruct shaderStruct
+      PhongMaterialShaderStruct shaderStruct = {}
     );
 
     void setShaderStruct(ShaderStructOptions shaderStruct);
