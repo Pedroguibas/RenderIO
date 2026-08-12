@@ -108,6 +108,16 @@ Mesh Model::processMesh(const aiMesh *mesh, const aiScene *scene) {
       );
     }
 
+    if (mesh->HasTangentsAndBitangents()) {
+      aiVector3D N = mesh->mNormals[i];
+      aiVector3D T = mesh->mTangents[i];
+      aiVector3D B = mesh->mBitangents[i];
+
+      float w = ((N ^ T) * B) < 0.0f ? -1.0f : 1.0f;
+
+      vertex.setTangent(glm::vec4(T.x, T.y, T.z, w));
+    }
+
     vertices.push_back(vertex);
   }
 
