@@ -132,7 +132,7 @@ Mesh Model::processMesh(const aiMesh *mesh, const aiScene *scene) {
 
   Material material = Material::createPhong({});
 
-  return Mesh(std::move(vertices), std::move(indices), std::move(material));
+  return Mesh(std::move(vertices), std::move(indices), mesh->mMaterialIndex);
 }
 
 void Model::drawNode(
@@ -141,7 +141,7 @@ void Model::drawNode(
   shader.setMat4("model", transform * node.modelTransform);
 
   for (auto idx : node.meshIndices)
-    meshes[idx].draw(shader);
+    meshes[idx].draw();
 
   for (const auto &n : node.children)
     drawNode(n, shader, transform);

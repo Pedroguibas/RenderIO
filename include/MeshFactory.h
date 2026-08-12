@@ -43,7 +43,7 @@ class MeshFactory {
         BoxBuilder &withTangent() noexcept;
 
         [[nodiscard]]
-        Mesh build(const Material &material) const;
+        Mesh build(unsigned int materialIndex = 0) const;
     };
 
     [[nodiscard]]

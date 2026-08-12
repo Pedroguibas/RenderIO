@@ -12,7 +12,7 @@ class Mesh {
     GLuint VAO = 0;
     GLuint VBO = 0;
     GLuint EBO = 0;
-    Material material;
+    unsigned int materialIndex;
     vector<Vertex> vertices;
     vector<unsigned int> indices;
     GLsizei indiceCount;
@@ -29,18 +29,17 @@ class Mesh {
     Mesh(
       const vector<Vertex> &vertices,
       const vector<unsigned int> &indicies,
-      const Material &material
+      unsigned int materialIndex = 0
     );
     ~Mesh();
 
-    void draw(Shader &shader) const;
+    void draw() const;
 
     const vector<Vertex> &getVertices() const noexcept;
 
-    const Material &getMaterial() const noexcept;
-    Material &getMaterial() noexcept;
+    unsigned int getMaterialIndex() const noexcept;
 
-    void setMaterial(const Material &material);
+    void setMaterialIndex(unsigned int idx);
 
     Mesh(const Mesh &) = delete;
     Mesh &operator=(const Mesh &) = delete;

@@ -133,8 +133,8 @@ int main() {
 
   MeshFactory mf;
 
-  Mesh cube = mf.box().withUv().withNormals().build(box);
-  Mesh lamp = mf.box().withUv().withNormals().build(lampMaterial);
+  Mesh cube = mf.box().withUv().withNormals().build();
+  Mesh lamp = mf.box().withUv().withNormals().build();
   Mesh floor(
     {Vertex(
        vec3{-15.0f, 0.0f, 15.0f},
@@ -160,8 +160,7 @@ int main() {
        glm::vec2{5.0f, 5.0f},
        vec3{0.0f, 1.0f, 0.0f}
      )},
-    {0, 1, 2, 2, 1, 3},
-    pbrGround
+    {0, 1, 2, 2, 1, 3}
   );
 
   Model miku("models/miku/source/miku.gltf");
@@ -224,7 +223,9 @@ int main() {
     pLight.upload(*shader, "pLight");
     sLight.upload(*shader, "sLight");
 
-    floor.draw(*shader);
+    pbrGround.use(*shader);
+
+    floor.draw();
 
     // model = glm::translate(glm::mat4(1.0f), {-1.0f, 0.5f, 0.0f});
     // shader->setMat4("model", model);
