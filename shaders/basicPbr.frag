@@ -6,6 +6,7 @@ in vec4 vColor;
 
 in vec2 vUv;
 in vec3 vNormal;
+in vec4 vTangent;
 
 const float PI = 3.14159265359;
 
@@ -42,7 +43,6 @@ struct AmbientOcclusion {
 
 struct Normal {
   sampler2D texture;
-  float value;
   bool mapEnabled;
 };
 
@@ -93,6 +93,26 @@ uniform Material material;
 in vec3 fragPos;
 
 out vec4 FragColor;
+
+vec3 getNormal() {
+  vec3 N = normalize(vNormal);
+
+  if (!material.normal.mapEnabled)
+    return N;
+
+
+  vec3 T = normalize(vTangent.xyz);
+
+  vec3 B = normalize(cross(T, N)) * vTangent.w;
+
+  mat3 TBN = mat3(T, B, N);
+
+  vec3 mappedNormal = texture(material.normal.texture, vUv).rgb;
+
+  mappedNormal = mappedNormal * 2.0 - 1.0;
+
+  return normalize(TBN * mappedNormal);
+}
 
 float calcAttenuation(
   float distanceToLight,
@@ -260,7 +280,7 @@ void main() {
   roughness = clamp(roughness, 0.04, 1.0);
   ao = clamp(ao, 0.0, 1.0);
 
-  vec3 N = normalize(vNormal);
+  vec3 N = getNormal();
   vec3 V = normalize(cameraPos - fragPos);
 
 

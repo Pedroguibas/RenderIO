@@ -13,6 +13,9 @@ out vec2 vUv;
 layout(location = 3) in vec3 aNormal;
 out vec3 vNormal;
 
+layout(location = 4) in vec4 aTangent;
+out vec4 vTangent;
+
 
 uniform mat4 model;
 uniform mat4 view;
@@ -31,7 +34,14 @@ void main() {
   
   vUv = aUv;
 
-  vNormal = mat3(transpose(inverse(model))) * aNormal;
+  mat3 normalMatrix = transpose(inverse(mat3(model)));
 
+  vec3 N = normalize(normalMatrix * aNormal);
+
+  vec3 T = normalize(normalMatrix * aTangent.xyz);
+  T = normalize(T - dot(T, N) * N);
+
+  vTangent = vec4(T, aTangent.w);
+  vNormal = N;
   fragPos = worldPos.xyz;
 }

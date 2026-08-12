@@ -12,6 +12,8 @@ class Vertex {
     optional<glm::vec2> uv;
     optional<glm::vec4> color;
     optional<glm::vec3> normal;
+    std::optional<glm::vec4> tangent;
+
     unsigned int length;
 
     void updateLength();
@@ -21,7 +23,8 @@ class Vertex {
       const glm::vec3 &position,
       const optional<glm::vec4> &color = std::nullopt,
       const optional<glm::vec2> &uv = std::nullopt,
-      const optional<glm::vec3> &normal = std::nullopt
+      const optional<glm::vec3> &normal = std::nullopt,
+      const std::optional<glm::vec4> &tangent = std::nullopt
     );
 
     void setPosition(const glm::vec3 &position);
@@ -36,6 +39,9 @@ class Vertex {
     void setNormal(const optional<glm::vec3> &normal);
     optional<glm::vec3> getNormal() const;
 
+    void setTangent(const std::optional<glm::vec4> &tangent);
+    std::optional<glm::vec4> getTangent() const;
+
     static vector<float> flatten(const vector<Vertex> &vertexes);
 
     vector<float> flatten();
@@ -43,4 +49,15 @@ class Vertex {
     bool hasColor() const;
     bool hasUv() const;
     bool hasNormal() const;
+    bool hasTangent() const;
+
+    static glm::vec4 genTangent(
+      const glm::vec3 &p1,
+      const glm::vec3 &p2,
+      const glm::vec3 &p3,
+      const glm::vec2 &uv1,
+      const glm::vec2 &uv2,
+      const glm::vec2 &uv3,
+      const glm::vec3 &N
+    );
 };

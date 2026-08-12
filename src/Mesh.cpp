@@ -31,7 +31,9 @@ Mesh::Mesh(
   for (const Vertex &vertex : vertices) {
     if (
       vertex.hasColor() != first.hasColor() ||
-      vertex.hasUv() != first.hasUv() || vertex.hasNormal() != first.hasNormal()
+      vertex.hasUv() != first.hasUv() ||
+      vertex.hasNormal() != first.hasNormal() ||
+      vertex.hasTangent() != first.hasTangent()
     ) {
       throw std::invalid_argument(
         "All mesh vertices must have the same layout"
@@ -75,6 +77,12 @@ Mesh::Mesh(
 
   if (vertices.at(0).hasNormal()) {
     addAttribute(3, 3, GL_FALSE, stride, (void *)(offset * sizeof(float)));
+    offset += 3;
+  }
+
+  if (vertices.at(0).hasTangent()) {
+    addAttribute(4, 3, GL_FALSE, stride, (void *)(offset * sizeof(float)));
+    offset += 3;
   }
 
   glBufferData(
