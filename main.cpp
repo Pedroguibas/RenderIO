@@ -121,7 +121,9 @@ int main() {
   );
   Material ground = Material::createPhong({.specular = {.enabled = true}});
   Material pbrGround = Material::createPBR(
-    {.albedo = {.mapEnabled = true}, .metallic = {.value = 0.5f}}
+    {.albedo = {.mapEnabled = true},
+     .metallic = {.value = 0.5f},
+     .ao = {.value = 0.5}}
   );
   Material lampMaterial = Material::createPhong({
     .albedo = {.index = 3, .mapEnabled = true},

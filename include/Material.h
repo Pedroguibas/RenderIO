@@ -86,7 +86,7 @@ struct PBRMaterialShaderStruct {
     string metallicRadical = "metallic";
     string roughnessRadical = "roughness";
     string normalRadical = "normal";
-    string ambientOcclusionRadical = "ambientOcclusion";
+    string ambientOcclusionRadical = "ao";
 };
 
 using ShaderOptions = std::variant<PBRShaderOptions, PhongShaderOptions>;

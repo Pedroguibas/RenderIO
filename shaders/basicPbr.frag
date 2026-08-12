@@ -34,10 +34,24 @@ struct Roughness {
   bool mapEnabled;
 };
 
+struct AmbientOcclusion {
+  sampler2D texture;
+  float value;
+  bool mapEnabled;
+};
+
+struct Normal {
+  sampler2D texture;
+  float value;
+  bool mapEnabled;
+};
+
 struct Material {
   Albedo albedo;
   Metallic metallic;
   Roughness roughness;
+  AmbientOcclusion ao;
+  Normal normal;
   Emission emission;
 };
 
@@ -227,6 +241,8 @@ void main() {
   vec3 baseColor = material.albedo.color.rgb;
   float metallic = material.metallic.value;
   float roughness = material.roughness.value; 
+  float ao = material.ao.value;
+
 
   if (material.albedo.mapEnabled)
     baseColor *= texture(material.albedo.texture, vUv).rgb;
@@ -237,8 +253,12 @@ void main() {
   if (material.roughness.mapEnabled)
     roughness *= texture(material.roughness.texture, vUv).r;
 
+  if (material.ao.mapEnabled)
+    roughness *= texture(material.ao.texture, vUv).r;
+
   metallic = clamp(metallic, 0.0, 1.0);
   roughness = clamp(roughness, 0.04, 1.0);
+  ao = clamp(ao, 0.0, 1.0);
 
   vec3 N = normalize(vNormal);
   vec3 V = normalize(cameraPos - fragPos);
@@ -247,7 +267,7 @@ void main() {
   vec3 finalColor = calcPointLight(pLight, baseColor, metallic, roughness, N, V);
   finalColor += calcDirectionLight(light, baseColor, metallic, roughness, N, V);
 
-  vec3 ambient = ambientStrength * baseColor;
+  vec3 ambient = ambientStrength * baseColor * ao;
   finalColor += ambient;
 
   FragColor = vec4(finalColor, material.albedo.color.a);
