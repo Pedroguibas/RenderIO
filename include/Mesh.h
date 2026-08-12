@@ -3,7 +3,6 @@
 #include <glad/gl.h>
 #include <vector>
 #include "Vertex.h"
-#include "Material.h"
 #include "Shader.h"
 using std::vector;
 
