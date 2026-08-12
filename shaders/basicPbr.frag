@@ -148,26 +148,19 @@ vec3 fresnelSchlick(
   return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-vec3 calcPointLight(
-  PointLight light,
+vec3 calcLo(
   vec3 baseColor,
   float metallic,
   float roughness,
   vec3 N,
-  vec3 V
+  vec3 V,
+  vec3 L,
+  vec3 radiance
 ) {
   vec3 F0 = vec3(0.04);
   F0 = mix(F0, baseColor, metallic);
 
-  vec3 L = normalize(light.position - fragPos);
-
   vec3 H = normalize(V + L);
-
-  float distanceToLight = length(light.position - fragPos);
-
-  float attenuation = calcAttenuation(distanceToLight, light.constant, light.linear, light.quadratic);
-
-  float radiance = light.color * attenuation;
 
   float D = distributionGGX(N, H, roughness);
 
@@ -187,24 +180,53 @@ vec3 calcPointLight(
 
   vec3 ks = F;
   vec3 kD = vec3(1.0) - ks;
+  kD *= 1.0 - metallic;
 
   float NdotL = max(dot(N, L), 0.0);
 
-  float lo = (
+  return (
     kD * baseColor / PI + specular
   )
   * radiance
   * NdotL;
-
-  vec3 ambient = ambientStrength * baseColor;
-
-  return ambient + Lo;
 }
 
-void maio() {
+vec3 calcDirectionLight (
+  DirectionLight light,
+  vec3 baseColor,
+  float metallic,
+  float roughness,
+  vec3 N,
+  vec3 V
+) {
+  vec3 L = normalize(-light.direction);
+
+  return calcLo(baseColor, metallic, roughness, N, V, L, light.color.rgb);
+}
+
+vec3 calcPointLight(
+  PointLight light,
+  vec3 baseColor,
+  float metallic,
+  float roughness,
+  vec3 N,
+  vec3 V
+) {
+  float distanceToLight = length(light.position - fragPos);
+
+  float attenuation = calcAttenuation(distanceToLight, light.constant, light.linear, light.quadratic);
+
+  vec3 radiance = light.color.rgb * attenuation;
+
+  vec3 L = normalize(light.position - fragPos);
+
+  return calcLo(baseColor, metallic, roughness, N, V, L, radiance);
+}
+
+void main() {
   vec3 baseColor = material.albedo.color.rgb;
   float metallic = material.metallic.value;
-  float roughness = material.roughness.value;
+  float roughness = material.roughness.value; 
 
   if (material.albedo.mapEnabled)
     baseColor *= texture(material.albedo.texture, vUv).rgb;
@@ -221,7 +243,12 @@ void maio() {
   vec3 N = normalize(vNormal);
   vec3 V = normalize(cameraPos - fragPos);
 
-  baseColor = calcPointLight(pLight, baseColor, metallic, roughness, N, V);
 
-  FragColor = (baseColor, material.albedo.color.a);
+  vec3 finalColor = calcPointLight(pLight, baseColor, metallic, roughness, N, V);
+  finalColor += calcDirectionLight(light, baseColor, metallic, roughness, N, V);
+
+  vec3 ambient = ambientStrength * baseColor;
+  finalColor += ambient;
+
+  FragColor = vec4(finalColor, material.albedo.color.a);
 }

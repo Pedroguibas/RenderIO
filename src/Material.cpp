@@ -138,13 +138,11 @@ void Material::setShaderStruct(ShaderStructOptions shaderStruct) {
 void Material::use(Shader &shader) const {
 
   if (std::holds_alternative<PhongShaderOptions>(shaderOptions)) {
-    auto structVal = std::get<PhongMaterialShaderStruct>(shaderStruct);
-    auto options = std::get<PhongShaderOptions>(shaderOptions);
+    const auto &structVal = std::get<PhongMaterialShaderStruct>(shaderStruct);
+    const auto &options = std::get<PhongShaderOptions>(shaderOptions);
 
     shader.setInt(structVal.albedoRadical + "texture", options.albedo.index);
-    shader.setVec3(
-      structVal.albedoRadical + "baseColor", options.albedo.baseColor
-    );
+    shader.setVec4(structVal.albedoRadical + "color", options.albedo.baseColor);
     shader.setBool(
       structVal.albedoRadical + "mapEnabled", options.albedo.mapEnabled
     );
@@ -181,13 +179,11 @@ void Material::use(Shader &shader) const {
 
   } else {
 
-    auto structVal = std::get<PBRMaterialShaderStruct>(shaderStruct);
-    auto options = std::get<PBRShaderOptions>(shaderOptions);
+    const auto &structVal = std::get<PBRMaterialShaderStruct>(shaderStruct);
+    const auto &options = std::get<PBRShaderOptions>(shaderOptions);
 
     shader.setInt(structVal.albedoRadical + "texture", options.albedo.index);
-    shader.setVec4(
-      structVal.albedoRadical + "baseColor", options.albedo.baseColor
-    );
+    shader.setVec4(structVal.albedoRadical + "color", options.albedo.baseColor);
     shader.setBool(
       structVal.albedoRadical + "mapEnabled", options.albedo.mapEnabled
     );

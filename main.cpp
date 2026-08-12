@@ -120,7 +120,9 @@ int main() {
      .emission = {.enabled = false}}
   );
   Material ground = Material::createPhong({.specular = {.enabled = true}});
-  Material pbrGround = Material::createPBR({});
+  Material pbrGround = Material::createPBR(
+    {.albedo = {.mapEnabled = true}, .metallic = {.value = 0.5f}}
+  );
   Material lampMaterial = Material::createPhong({
     .albedo = {.index = 3, .mapEnabled = true},
     .specular = {.index = 4, .enabled = true, .mapEnabled = true},
@@ -157,7 +159,7 @@ int main() {
        vec3{0.0f, 1.0f, 0.0f}
      )},
     {0, 1, 2, 2, 1, 3},
-    ground
+    pbrGround
   );
 
   Model miku("models/miku/source/miku.gltf");
