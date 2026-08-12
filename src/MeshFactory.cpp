@@ -27,8 +27,16 @@ MeshFactory::BoxBuilder::withColor(const glm::vec4 &color) noexcept {
   return *this;
 }
 
+MeshFactory::BoxBuilder &MeshFactory::BoxBuilder::withTangent() noexcept {
+  includeTangent = true;
+  return *this;
+}
+
 Vertex MeshFactory::BoxBuilder::makeVertex(
-  const glm::vec3 &position, const glm::vec2 &uv, const glm::vec3 &normal
+  const glm::vec3 &position,
+  const glm::vec2 &uv,
+  const glm::vec3 &normal,
+  const glm::vec4 &tan
 ) const {
   Vertex v(position);
 
@@ -40,6 +48,9 @@ Vertex MeshFactory::BoxBuilder::makeVertex(
 
   if (includeNormals)
     v.setNormal(normal);
+
+  if (includeTangent)
+    v.setTangent(tan);
 
   return v;
 }
@@ -82,9 +93,38 @@ Mesh MeshFactory::BoxBuilder::build(const Material &material) const {
   for (const CubeFace &face : faces) {
     const auto baseIndex = static_cast<unsigned int>(vertices.size());
 
-    for (int i = 0; i < 4; i++) {
-      vertices.push_back(makeVertex(face.positions[i], uvs[i], face.normal));
-    }
+    glm::vec4 tan1 = Vertex::genTangent(
+      face.positions[0],
+      face.positions[1],
+      face.positions[2],
+      uvs[0],
+      uvs[1],
+      uvs[2],
+      face.normal
+    );
+
+    glm::vec4 tan2 = Vertex::genTangent(
+      face.positions[2],
+      face.positions[3],
+      face.positions[0],
+      uvs[2],
+      uvs[3],
+      uvs[0],
+      face.normal
+    );
+
+    vertices.push_back(
+      makeVertex(face.positions[0], uvs[0], face.normal, tan1 + tan2)
+    );
+    vertices.push_back(
+      makeVertex(face.positions[1], uvs[1], face.normal, tan1)
+    );
+    vertices.push_back(
+      makeVertex(face.positions[2], uvs[2], face.normal, tan1 + tan2)
+    );
+    vertices.push_back(
+      makeVertex(face.positions[3], uvs[3], face.normal, tan2)
+    );
 
     indices.insert(
       indices.end(),

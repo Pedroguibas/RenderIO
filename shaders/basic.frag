@@ -21,6 +21,12 @@ struct Specularity {
   bool mapEnabled;
 };
 
+struct Albedo {
+  sampler2D texture;
+  vec4 color;
+  bool mapEnabled;
+};
+
 struct Emission {
   sampler2D texture;
   float intensity;
@@ -29,7 +35,7 @@ struct Emission {
 };
 
 struct Material {
-  sampler2D diffuse;
+  Albedo albedo;
   Specularity specular;
   Emission emission;
 };
@@ -195,13 +201,15 @@ vec3 calcSpotLight(
 }
 
 void main() {
-  vec4 baseColor = vec4(1.0);
+  vec4 baseColor = material.albedo.color;
   vec3 normal = vec3(0.0);
   float reflectivity = 1.0;
   vec3 emission = vec3(0.0);
 
   #ifdef HAS_UV
-  baseColor = texture(material.diffuse, vUv);
+  if (material.albedo.mapEnabled)
+    baseColor = texture(material.diffuse, vUv);
+    
   if (material.specular.enabled && material.specular.mapEnabled)
     reflectivity = texture(material.specular.texture, vUv).r;
 

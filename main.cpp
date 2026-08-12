@@ -71,7 +71,7 @@ int main() {
   Shader *shader;
   try {
     shader = Shader::create(
-      "shaders/basic.vert", "shaders/basic.frag", {"HAS_UV", "HAS_NORMAL"}
+      "shaders/basicPbr.vert", "shaders/basicPbr.frag", {"HAS_UV", "HAS_NORMAL"}
     );
   } catch (const std::exception &e) {
     cout << e.what();
@@ -114,14 +114,19 @@ int main() {
     glm::normalize(vec3(-1.0f, -1.0f, 0.0f))
   );
 
-  Material box(
-    {.diffuseIndex = 1,
+  Material box = Material::createPhong(
+    {.albedo = {.index = 1, .mapEnabled = true},
      .specular = {.index = 2, .enabled = true, .mapEnabled = true},
      .emission = {.enabled = false}}
   );
-  Material ground({.specular = {.enabled = true}});
-  Material lampMaterial({
-    .diffuseIndex = 3,
+  Material ground = Material::createPhong({.specular = {.enabled = true}});
+  Material pbrGround = Material::createPBR(
+    {.albedo = {.mapEnabled = true},
+     .metallic = {.value = 0.5f},
+     .ao = {.value = 0.5}}
+  );
+  Material lampMaterial = Material::createPhong({
+    .albedo = {.index = 3, .mapEnabled = true},
     .specular = {.index = 4, .enabled = true, .mapEnabled = true},
     .emission = {.index = 5, .enabled = true, .mapEnabled = true},
   });
@@ -156,7 +161,7 @@ int main() {
        vec3{0.0f, 1.0f, 0.0f}
      )},
     {0, 1, 2, 2, 1, 3},
-    ground
+    pbrGround
   );
 
   Model miku("models/miku/source/miku.gltf");

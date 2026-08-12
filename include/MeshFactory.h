@@ -23,13 +23,15 @@ class MeshFactory {
         bool includeUv = false;
         bool includeNormals = false;
         bool includeColor = false;
+        bool includeTangent = false;
 
         glm::vec4 color{1.0f};
 
         Vertex makeVertex(
           const glm::vec3 &position,
           const glm::vec2 &uv,
-          const glm::vec3 &normal
+          const glm::vec3 &normal,
+          const glm::vec4 &tan
         ) const;
 
       public:
@@ -38,6 +40,7 @@ class MeshFactory {
         BoxBuilder &withUv() noexcept;
         BoxBuilder &withNormals() noexcept;
         BoxBuilder &withColor(const glm::vec4 &color) noexcept;
+        BoxBuilder &withTangent() noexcept;
 
         [[nodiscard]]
         Mesh build(const Material &material) const;
