@@ -66,11 +66,45 @@ void Camera::setSpeed(float speed) noexcept {
   this->speed = speed;
 }
 
-const glm::vec3 Camera::calculateMovement(glm::vec3 movement) {
+const glm::vec3 Camera::calculateMovementOnCamAxis(glm::vec3 movement) {
   return glm::normalize(
            movement.x * right + movement.y * up + movement.z * forward
          ) *
          speed;
+}
+
+const glm::vec3 Camera::calculateMovement(glm::vec3 movement) {
+  return glm::normalize(
+           movement.x * glm::vec3(right.x, 0.0f, right.z) +
+           movement.y * glm::vec3(0.0f, 1.0f, 0.0f) +
+           movement.z * glm::vec3{forward.x, 0.0f, forward.z}
+         ) *
+         speed;
+}
+
+void Camera::moveForwardOnCamAxis(float deltaTime) noexcept {
+  position +=
+    calculateMovementOnCamAxis(glm::vec3(0.0f, 0.0f, 1.0f)) * deltaTime;
+}
+void Camera::moveBackwardsOnCamAxis(float deltaTime) noexcept {
+  position +=
+    calculateMovementOnCamAxis(glm::vec3(0.0f, 0.0f, -1.0f)) * deltaTime;
+}
+void Camera::moveRightOnCamAxis(float deltaTime) noexcept {
+  position +=
+    calculateMovementOnCamAxis(glm::vec3(1.0f, 0.0f, 0.0f)) * deltaTime;
+}
+void Camera::moveLeftOnCamAxis(float deltaTime) noexcept {
+  position +=
+    calculateMovementOnCamAxis(glm::vec3(-1.0f, 0.0f, 0.0f)) * deltaTime;
+}
+void Camera::moveUpOnCamAxis(float deltaTime) noexcept {
+  position +=
+    calculateMovementOnCamAxis(glm::vec3(0.0f, 1.0f, 0.0f)) * deltaTime;
+}
+void Camera::moveDownOnCamAxis(float deltaTime) noexcept {
+  position +=
+    calculateMovementOnCamAxis(glm::vec3(0.0f, -1.0f, 0.0f)) * deltaTime;
 }
 
 void Camera::moveForward(float deltaTime) noexcept {
