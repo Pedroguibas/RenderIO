@@ -13,6 +13,9 @@
 #include <glm/glm.hpp>
 #include <unordered_map>
 #include <memory>
+#include <optional>
+
+enum class MaterialImportMode { Auto, PBR, Phong };
 
 struct ModelNode {
     glm::mat4 modelTransform;
@@ -32,7 +35,10 @@ class Model {
 
   public:
     Model(std::vector<Mesh> meshes);
-    Model(const std::filesystem::path &path);
+    Model(
+      const std::filesystem::path &path,
+      MaterialImportMode materialImportMode = MaterialImportMode::Auto
+    );
 
     const std::vector<Mesh> &getMeshes() const noexcept;
     std::vector<Mesh> &getMeshes() noexcept;
@@ -40,11 +46,13 @@ class Model {
     const std::vector<Material> &getMaterials() const noexcept;
     std::vector<Material> &getMaterials() noexcept;
 
-    void
-    draw(Shader &shader, const glm::mat4 &transform = glm::mat4{1.0f}) const;
+    void draw(Shader &shader, const glm::mat4 &transform = glm::mat4{1.0f});
 
   private:
-    void loadModel(const std::filesystem::path &path);
+    void loadModel(
+      const std::filesystem::path &path,
+      MaterialImportMode materialImportMode = MaterialImportMode::Auto
+    );
     ModelNode processNode(
       const aiNode *node,
       const aiScene *scene,
@@ -52,7 +60,10 @@ class Model {
     );
     Mesh processMesh(const aiMesh *mesh, const aiScene *scene);
 
-    void processMaterials(const aiScene *scene);
+    void processMaterials(
+      const aiScene *scene,
+      MaterialImportMode materialImportMode = MaterialImportMode::Auto
+    );
     bool isPBRMaterial(const aiMaterial *material);
     Material processPBR(const aiMaterial *material, const aiScene *scene);
     Material processPhong(const aiMaterial *material, const aiScene *scene);
@@ -83,13 +94,15 @@ class Model {
       const aiMaterial *material, const aiScene *scene, NormalOptions &options
     );
 
-    void processTextures(const aiMaterial *material);
-    Texture processTexture(const aiMaterial *material);
+    std::shared_ptr<Texture> processTexture(
+      const aiMaterial *material, aiTextureType type, const aiScene *scene
+    );
 
     void drawNode(
       const ModelNode &node,
       Shader &shader,
-      const glm::mat4 &transform = glm::mat4{1.0f}
-    ) const;
+      const glm::mat4 &transform = glm::mat4{1.0f},
+      std::optional<unsigned int> lastUsedMaterialIndex = std::nullopt
+    );
     static glm::mat4 toGlmMat4(const aiMatrix4x4t<float> &m);
 };

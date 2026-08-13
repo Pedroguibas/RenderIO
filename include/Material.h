@@ -3,11 +3,13 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <variant>
+#include <memory>
 
 #include "Texture.h"
 #include "Shader.h"
 
 struct AlbedoOptions {
+    std::shared_ptr<Texture> texture = nullptr;
     unsigned int index = 0;
     glm::vec4 baseColor = glm::vec4(1.0f);
 
@@ -15,7 +17,8 @@ struct AlbedoOptions {
 };
 
 struct SpecularOptions {
-    unsigned int index = 0;
+    std::shared_ptr<Texture> texture = nullptr;
+    unsigned int index = 1;
     float shininess = 58.0f;
     float intensity = 0.5f;
     glm::vec3 color = glm::vec3(1.0f);
@@ -24,34 +27,39 @@ struct SpecularOptions {
 };
 
 struct EmissionOptions {
-    unsigned int index = 0;
+    std::shared_ptr<Texture> texture = nullptr;
+    unsigned int index = 5;
     float intensity = 1.0f;
     bool enabled = false;
     bool mapEnabled = false;
 };
 
 struct MetallicOptions {
-    unsigned int index = 0;
+    std::shared_ptr<Texture> texture = nullptr;
+    unsigned int index = 1;
     float value = 0.0f;
 
     bool mapEnabled = false;
 };
 
 struct RoughnessOptions {
-    unsigned int index = 0;
+    std::shared_ptr<Texture> texture = nullptr;
+    unsigned int index = 2;
     float value = 0.5f;
 
     bool mapEnabled = false;
 };
 
 struct NormalOptions {
-    unsigned int index = 0;
+    std::shared_ptr<Texture> texture = nullptr;
+    unsigned int index = 3;
 
     bool mapEnabled = false;
 };
 
 struct AmbientOcclusionOptions {
-    unsigned int index = 0;
+    std::shared_ptr<Texture> texture = nullptr;
+    unsigned int index = 4;
     float value = 1.0f;
 
     bool mapEnabled = false;

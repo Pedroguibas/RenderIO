@@ -17,8 +17,11 @@ Model::Model(std::vector<Mesh> meshes) : meshes(std::move(meshes)) {
   }
 }
 
-Model::Model(const std::filesystem::path &path) : directory(path) {
-  loadModel(path);
+Model::Model(
+  const std::filesystem::path &path, MaterialImportMode materialImportMode
+)
+: directory(path) {
+  loadModel(path, materialImportMode);
 }
 
 const std::vector<Mesh> &Model::getMeshes() const noexcept {
@@ -28,17 +31,19 @@ std::vector<Mesh> &Model::getMeshes() noexcept {
   return meshes;
 }
 
-void Model::draw(Shader &shader, const glm::mat4 &transform) const {
+void Model::draw(Shader &shader, const glm::mat4 &transform) {
   drawNode(root, shader, transform);
 }
 
-void Model::loadModel(const std::filesystem::path &path) {
+void Model::loadModel(
+  const std::filesystem::path &path, MaterialImportMode materialImportMode
+) {
   Assimp::Importer importer;
 
   const aiScene *scene = importer.ReadFile(
     path.string(),
     aiProcess_Triangulate | aiProcess_GenSmoothNormals |
-      aiProcess_JoinIdenticalVertices
+      aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace
   );
 
   if (
@@ -55,6 +60,7 @@ void Model::loadModel(const std::filesystem::path &path) {
 
   meshes.clear();
   root = processNode(scene->mRootNode, scene);
+  processMaterials(scene);
 }
 
 ModelNode Model::processNode(
@@ -136,12 +142,22 @@ Mesh Model::processMesh(const aiMesh *mesh, const aiScene *scene) {
 }
 
 void Model::drawNode(
-  const ModelNode &node, Shader &shader, const glm::mat4 &transform
-) const {
+  const ModelNode &node,
+  Shader &shader,
+  const glm::mat4 &transform,
+  std::optional<unsigned int> lastUsedMaterialIndex
+) {
   shader.setMat4("model", transform * node.modelTransform);
 
-  for (auto idx : node.meshIndices)
+  for (auto idx : node.meshIndices) {
+    const unsigned int materialIndex = meshes[idx].getMaterialIndex();
+    if (!lastUsedMaterialIndex || materialIndex != *lastUsedMaterialIndex) {
+      materials[materialIndex].use(shader);
+      lastUsedMaterialIndex = materialIndex;
+    }
+
     meshes[idx].draw();
+  }
 
   for (const auto &n : node.children)
     drawNode(n, shader, transform);
@@ -154,4 +170,248 @@ glm::mat4 Model::toGlmMat4(const aiMatrix4x4t<float> &m) {
     {m.a3, m.b3, m.c3, m.d3},
     {m.a4, m.b4, m.c4, m.d4},
   };
+}
+
+void Model::processMaterials(
+  const aiScene *scene, MaterialImportMode materialImportMode
+) {
+  switch (materialImportMode) {
+  case MaterialImportMode::Auto:
+    for (unsigned int i = 0; i < scene->mNumMaterials; i++) {
+      if (isPBRMaterial(scene->mMaterials[i]))
+        materials.push_back(processPBR(scene->mMaterials[i], scene));
+      else
+        materials.push_back(processPhong(scene->mMaterials[i], scene));
+    }
+    break;
+
+  case MaterialImportMode::PBR:
+    for (unsigned int i = 0; i < scene->mNumMaterials; i++)
+      materials.push_back(processPBR(scene->mMaterials[i], scene));
+    break;
+
+  case MaterialImportMode::Phong:
+    for (unsigned int i = 0; i < scene->mNumMaterials; i++)
+      materials.push_back(processPhong(scene->mMaterials[i], scene));
+    break;
+  }
+}
+
+bool Model::isPBRMaterial(const aiMaterial *material) {
+  aiShadingMode shadingMode;
+
+  if (
+    material->Get(AI_MATKEY_SHADING_MODEL, shadingMode) == AI_SUCCESS &&
+    shadingMode == aiShadingMode_PBR_BRDF
+  ) {
+    return true;
+  }
+
+  float value;
+
+  if (material->Get(AI_MATKEY_METALLIC_FACTOR, value) == AI_SUCCESS)
+    return true;
+
+  if (material->Get(AI_MATKEY_ROUGHNESS_FACTOR, value) == AI_SUCCESS)
+    return true;
+
+  if (material->GetTextureCount(aiTextureType_METALNESS) > 0)
+    return true;
+
+  if (material->GetTextureCount(aiTextureType_DIFFUSE_ROUGHNESS) > 0)
+    return true;
+
+  return false;
+}
+
+Material Model::processPBR(const aiMaterial *material, const aiScene *scene) {
+  PBRShaderOptions options;
+
+  processAlbedo(material, scene, options.albedo);
+  processRoughness(material, scene, options.roughness);
+  processMetallic(material, scene, options.metallic);
+  processAmbientOcclusion(material, scene, options.ao);
+  processNormal(material, scene, options.normal);
+  processEmission(material, scene, options.emission);
+
+  return Material::createPBR(options);
+}
+
+Material Model::processPhong(const aiMaterial *material, const aiScene *scene) {
+  PhongShaderOptions options;
+
+  processAlbedo(material, scene, options.albedo);
+  processSpecularity(material, scene, options.specular);
+  processEmission(material, scene, options.emission);
+
+  return Material::createPhong(options);
+}
+
+void Model::processAlbedo(
+  const aiMaterial *material, const aiScene *scene, AlbedoOptions &options
+) {
+  aiColor4D color;
+
+  if (material->Get(AI_MATKEY_BASE_COLOR, color) == AI_SUCCESS) {
+    options.baseColor = glm::vec4{color.r, color.g, color.b, color.a};
+  }
+
+  if (material->GetTextureCount(aiTextureType_BASE_COLOR) > 0) {
+    auto texture = processTexture(material, aiTextureType_BASE_COLOR, scene);
+
+    if (texture) {
+      options.texture = texture;
+      options.mapEnabled = true;
+    }
+  }
+}
+void Model::processRoughness(
+  const aiMaterial *material, const aiScene *scene, RoughnessOptions &options
+) {
+  float value;
+
+  if (material->Get(AI_MATKEY_ROUGHNESS_FACTOR, value) == AI_SUCCESS) {
+    options.value = value;
+  }
+
+  if (material->GetTextureCount(aiTextureType_DIFFUSE_ROUGHNESS) > 0) {
+    auto texture =
+      processTexture(material, aiTextureType_DIFFUSE_ROUGHNESS, scene);
+
+    if (texture) {
+      options.texture = texture;
+      options.mapEnabled = true;
+    }
+  }
+}
+void Model::processMetallic(
+  const aiMaterial *material, const aiScene *scene, MetallicOptions &options
+) {
+  float value;
+
+  if (material->Get(AI_MATKEY_METALLIC_FACTOR, value) == AI_SUCCESS) {
+    options.value = value;
+  }
+
+  if (material->GetTextureCount(aiTextureType_METALNESS) > 0) {
+    auto texture = processTexture(material, aiTextureType_METALNESS, scene);
+
+    if (texture) {
+      options.texture = texture;
+      options.mapEnabled = true;
+    }
+  }
+}
+void Model::processEmission(
+  const aiMaterial *material, const aiScene *scene, EmissionOptions &options
+) {
+  float value;
+
+  if (material->Get(AI_MATKEY_EMISSIVE_INTENSITY, value) == AI_SUCCESS) {
+    options.intensity = value;
+
+    options.enabled = true;
+  }
+
+  if (material->GetTextureCount(aiTextureType_EMISSIVE) > 0) {
+    auto texture = processTexture(material, aiTextureType_EMISSIVE, scene);
+
+    if (texture) {
+      options.texture = texture;
+      options.mapEnabled = true;
+      options.enabled = true;
+    }
+  }
+}
+void Model::processSpecularity(
+  const aiMaterial *material, const aiScene *scene, SpecularOptions &options
+) {
+  float value;
+
+  if (material->Get(AI_MATKEY_SPECULAR_FACTOR, value) == AI_SUCCESS) {
+    options.intensity = value;
+
+    aiColor3D color;
+    if (material->Get(AI_MATKEY_COLOR_SPECULAR, color) == AI_SUCCESS) {
+      options.color = glm::vec3{color.r, color.g, color.b};
+    }
+
+    if (material->Get(AI_MATKEY_SHININESS, value) == AI_SUCCESS) {
+      options.shininess = value;
+    }
+    options.enabled = true;
+  }
+
+  if (material->GetTextureCount(aiTextureType_SPECULAR) > 0) {
+    auto texture = processTexture(material, aiTextureType_SPECULAR, scene);
+
+    if (texture) {
+      options.texture = texture;
+      options.mapEnabled = true;
+    }
+    options.enabled = true;
+  }
+}
+void Model::processAmbientOcclusion(
+  const aiMaterial *material,
+  const aiScene *scene,
+  AmbientOcclusionOptions &options
+) {
+  options.value = 1.0f;
+
+  if (material->GetTextureCount(aiTextureType_AMBIENT_OCCLUSION) > 0) {
+    auto texture =
+      processTexture(material, aiTextureType_AMBIENT_OCCLUSION, scene);
+
+    if (texture) {
+      options.texture = texture;
+      options.mapEnabled = true;
+    }
+  }
+}
+void Model::processNormal(
+  const aiMaterial *material, const aiScene *scene, NormalOptions &options
+) {
+  if (material->GetTextureCount(aiTextureType_NORMALS) > 0) {
+    auto texture = processTexture(material, aiTextureType_NORMALS, scene);
+
+    if (texture) {
+      options.texture = texture;
+      options.mapEnabled = true;
+    }
+  }
+}
+
+std::shared_ptr<Texture> Model::processTexture(
+  const aiMaterial *material, aiTextureType type, const aiScene *scene
+) {
+  if (material->GetTextureCount(type) == 0)
+    return 0;
+
+  aiString texPath;
+
+  if (material->GetTexture(type, 0, &texPath) != AI_SUCCESS)
+    return 0;
+
+  const char *path = texPath.C_Str();
+
+  if (const aiTexture *embedded = scene->GetEmbeddedTexture(path)) {
+    throw std::runtime_error("Embedded Textures are not supported yet");
+  }
+
+  std::filesystem::path relativePath(path);
+  std::filesystem::path fullPath =
+    (directory / relativePath).lexically_normal();
+
+  auto it = loadedTextures.find(fullPath);
+
+  if (it != loadedTextures.end()) {
+    return it->second;
+  }
+
+  auto texture = std::make_shared<Texture>(fullPath);
+
+  loadedTextures.emplace(fullPath, texture);
+
+  return texture;
 }

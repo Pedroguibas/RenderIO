@@ -2,15 +2,19 @@
 
 #include <stb_image.h>
 #include <stdexcept>
+#include <string>
 
-Texture::Texture(const string &path, unsigned int unit) {
+Texture::Texture(const std::filesystem::path &path) {
   int channels;
 
   stbi_set_flip_vertically_on_load(true);
-  unsigned char *data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+  unsigned char *data =
+    stbi_load(path.string().c_str(), &width, &height, &channels, 0);
 
   if (!data)
-    throw std::invalid_argument(string("Unable to locate texture:\n") + path);
+    throw std::invalid_argument(
+      std::string("Unable to locate texture:\n") + path.string()
+    );
 
   GLenum format;
   switch (channels) {
@@ -27,11 +31,15 @@ Texture::Texture(const string &path, unsigned int unit) {
     break;
 
   default:
-    throw std::invalid_argument(string("Unsuported texture format:\n" + path));
+    throw std::invalid_argument(
+      std::string("Unsuported texture format:\n" + path.string())
+    );
   }
 
   glGenTextures(1, &id);
-  bind(unit);
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, id);
 
   glTexImage2D(
     GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data
