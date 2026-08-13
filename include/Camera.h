@@ -19,7 +19,7 @@ class Camera {
     float nearPlane = 0.1f;
     float farPlane = 100.0f;
 
-    float speed = 0.35f;
+    float speed = 10.0f;
     float mouseSensitivity = 0.0003f;
 
     void setDirection(const vec3 &dir);

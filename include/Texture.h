@@ -1,8 +1,7 @@
 #pragma once
 
-#include <string>
 #include <glad/gl.h>
-using std::string;
+#include <filesystem>
 
 class Texture {
   private:
@@ -11,7 +10,7 @@ class Texture {
     int height;
 
   public:
-    Texture(const string &path, unsigned int unit);
+    Texture(const std::filesystem::path &path);
     ~Texture();
 
     void bind(GLuint unit) const;

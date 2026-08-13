@@ -141,6 +141,15 @@ void Material::use(Shader &shader) const {
     const auto &structVal = std::get<PhongMaterialShaderStruct>(shaderStruct);
     const auto &options = std::get<PhongShaderOptions>(shaderOptions);
 
+    if (options.albedo.mapEnabled)
+      options.albedo.texture->bind(options.albedo.index);
+
+    if (options.specular.mapEnabled)
+      options.specular.texture->bind(options.specular.index);
+
+    if (options.emission.mapEnabled)
+      options.emission.texture->bind(options.emission.index);
+
     shader.setInt(structVal.albedoRadical + "texture", options.albedo.index);
     shader.setVec4(structVal.albedoRadical + "color", options.albedo.baseColor);
     shader.setBool(
@@ -181,6 +190,24 @@ void Material::use(Shader &shader) const {
 
     const auto &structVal = std::get<PBRMaterialShaderStruct>(shaderStruct);
     const auto &options = std::get<PBRShaderOptions>(shaderOptions);
+
+    if (options.albedo.mapEnabled)
+      options.albedo.texture->bind(options.albedo.index);
+
+    if (options.metallic.mapEnabled)
+      options.metallic.texture->bind(options.metallic.index);
+
+    if (options.roughness.mapEnabled)
+      options.roughness.texture->bind(options.roughness.index);
+
+    if (options.ao.mapEnabled)
+      options.ao.texture->bind(options.ao.index);
+
+    if (options.normal.mapEnabled)
+      options.normal.texture->bind(options.normal.index);
+
+    if (options.emission.mapEnabled)
+      options.emission.texture->bind(options.emission.index);
 
     shader.setInt(structVal.albedoRadical + "texture", options.albedo.index);
     shader.setVec4(structVal.albedoRadical + "color", options.albedo.baseColor);

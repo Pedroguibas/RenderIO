@@ -70,7 +70,7 @@ const glm::vec3 Camera::calculateMovement(glm::vec3 movement) {
   return glm::normalize(
            movement.x * right + movement.y * up + movement.z * forward
          ) *
-         0.1f * speed;
+         speed;
 }
 
 void Camera::moveForward(float deltaTime) noexcept {

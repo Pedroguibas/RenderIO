@@ -81,24 +81,24 @@ int main() {
   Camera cam({0.0f, 3.0f, 4.0f});
   shader->use();
 
-  Texture *groundTex;
-  Texture *boxDiffuse;
-  Texture *boxSpecular;
-  Texture *lampDiffuse;
-  Texture *lampSpecular;
-  Texture *lampEmission;
+  std::shared_ptr<Texture> groundTex;
+  std::shared_ptr<Texture> boxDiffuse;
+  std::shared_ptr<Texture> boxSpecular;
+  std::shared_ptr<Texture> lampDiffuse;
+  std::shared_ptr<Texture> lampSpecular;
+  std::shared_ptr<Texture> lampEmission;
   try {
-    groundTex = new Texture("textures/ground.jpg", 0);
+    groundTex = std::make_shared<Texture>("textures/ground.jpg");
 
-    boxDiffuse = new Texture("textures/box_diffuse.png", 1);
+    boxDiffuse = std::make_shared<Texture>("textures/box_diffuse.png");
 
-    boxSpecular = new Texture("textures/box_specular.png", 2);
+    boxSpecular = std::make_shared<Texture>("textures/box_specular.png");
 
-    lampDiffuse = new Texture("textures/lamp_diffuse.png", 3);
+    lampDiffuse = std::make_shared<Texture>("textures/lamp_diffuse.png");
 
-    lampSpecular = new Texture("textures/lamp_specular.png", 4);
+    lampSpecular = std::make_shared<Texture>("textures/lamp_specular.png");
 
-    lampEmission = new Texture("textures/lamp_emission.png", 5);
+    lampEmission = std::make_shared<Texture>("textures/lamp_emission.png");
   } catch (const std::exception &e) {
     cout << e.what();
     return -1;
@@ -115,26 +115,28 @@ int main() {
   );
 
   Material box = Material::createPhong(
-    {.albedo = {.index = 1, .mapEnabled = true},
-     .specular = {.index = 2, .enabled = true, .mapEnabled = true},
+    {.albedo = {.texture = boxDiffuse, .mapEnabled = true},
+     .specular = {.texture = boxSpecular, .enabled = true, .mapEnabled = true},
      .emission = {.enabled = false}}
   );
-  Material ground = Material::createPhong({.specular = {.enabled = true}});
+  Material ground = Material::createPhong(
+    {.albedo = {.texture = groundTex}, .specular = {.enabled = true}}
+  );
   Material pbrGround = Material::createPBR(
-    {.albedo = {.mapEnabled = true},
+    {.albedo = {.texture = groundTex, .mapEnabled = true},
      .metallic = {.value = 0.5f},
      .ao = {.value = 0.5}}
   );
   Material lampMaterial = Material::createPhong({
-    .albedo = {.index = 3, .mapEnabled = true},
-    .specular = {.index = 4, .enabled = true, .mapEnabled = true},
-    .emission = {.index = 5, .enabled = true, .mapEnabled = true},
+    .albedo = {.texture = lampDiffuse, .mapEnabled = true},
+    .specular = {.texture = lampSpecular, .enabled = true, .mapEnabled = true},
+    .emission = {.texture = lampEmission, .enabled = true, .mapEnabled = true},
   });
 
   MeshFactory mf;
 
-  Mesh cube = mf.box().withUv().withNormals().build(box);
-  Mesh lamp = mf.box().withUv().withNormals().build(lampMaterial);
+  Mesh cube = mf.box().withUv().withNormals().build();
+  Mesh lamp = mf.box().withUv().withNormals().build();
   Mesh floor(
     {Vertex(
        vec3{-15.0f, 0.0f, 15.0f},
@@ -160,8 +162,7 @@ int main() {
        glm::vec2{5.0f, 5.0f},
        vec3{0.0f, 1.0f, 0.0f}
      )},
-    {0, 1, 2, 2, 1, 3},
-    pbrGround
+    {0, 1, 2, 2, 1, 3}
   );
 
   Model miku("models/miku/source/miku.gltf");
@@ -199,10 +200,13 @@ int main() {
   });
   mouseInputs.hideCursor();
 
+  float lastTick = glfwGetTime();
   int w_width, w_height;
   while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    deltaTime = glfwGetTime() - deltaTime;
+    float currentTick = glfwGetTime();
+    deltaTime = currentTick - lastTick;
+    lastTick = currentTick;
 
     glfwPollEvents();
     inputs.handleInputs();
@@ -224,7 +228,8 @@ int main() {
     pLight.upload(*shader, "pLight");
     sLight.upload(*shader, "sLight");
 
-    floor.draw(*shader);
+    pbrGround.use(*shader);
+    floor.draw();
 
     // model = glm::translate(glm::mat4(1.0f), {-1.0f, 0.5f, 0.0f});
     // shader->setMat4("model", model);
