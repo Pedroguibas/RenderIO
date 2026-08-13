@@ -25,6 +25,7 @@ class Camera {
     void setDirection(const vec3 &dir);
     void updateVectors();
     const glm::vec3 calculateMovement(glm::vec3 movement);
+    const glm::vec3 calculateMovementOnCamAxis(glm::vec3 movement);
 
   public:
     Camera();
@@ -48,6 +49,13 @@ class Camera {
     void moveLeft(float deltaTime) noexcept;
     void moveUp(float deltaTime) noexcept;
     void moveDown(float deltaTime) noexcept;
+
+    void moveForwardOnCamAxis(float deltaTime) noexcept;
+    void moveBackwardsOnCamAxis(float deltaTime) noexcept;
+    void moveRightOnCamAxis(float deltaTime) noexcept;
+    void moveLeftOnCamAxis(float deltaTime) noexcept;
+    void moveUpOnCamAxis(float deltaTime) noexcept;
+    void moveDownOnCamAxis(float deltaTime) noexcept;
 
     void rotate(float x, float y) noexcept;
 };
