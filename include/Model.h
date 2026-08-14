@@ -17,11 +17,15 @@
 
 enum class MaterialImportMode { Auto, PBR, Phong };
 
+using NodeId = uint32_t;
+
 struct ModelNode {
+    std::string name;
+
     glm::mat4 modelTransform;
 
     std::vector<size_t> meshIndices;
-    std::vector<ModelNode> children;
+    std::vector<NodeId> children;
 };
 
 class Model {
@@ -31,7 +35,9 @@ class Model {
     std::vector<Material> materials;
     std::vector<Mesh> meshes;
     std::filesystem::path directory;
-    ModelNode root;
+    std::vector<ModelNode> nodes;
+    std::unordered_map<std::string, NodeId> nodesByName;
+    NodeId rootNode;
 
   public:
     Model(std::vector<Mesh> meshes);
@@ -48,12 +54,15 @@ class Model {
 
     void draw(Shader &shader, const glm::mat4 &transform = glm::mat4{1.0f});
 
+    ModelNode *getNode(const std::string &name);
+    ModelNode *getNode(NodeId id);
+
   private:
     void loadModel(
       const std::filesystem::path &path,
       MaterialImportMode materialImportMode = MaterialImportMode::Auto
     );
-    ModelNode processNode(
+    NodeId processNode(
       const aiNode *node,
       const aiScene *scene,
       const glm::mat4 &transform = {1.0f}
@@ -99,7 +108,7 @@ class Model {
     );
 
     void drawNode(
-      const ModelNode &node,
+      const NodeId &nodeId,
       Shader &shader,
       const glm::mat4 &transform = glm::mat4{1.0f},
       std::optional<unsigned int> lastUsedMaterialIndex = std::nullopt
