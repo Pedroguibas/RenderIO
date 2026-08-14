@@ -10,7 +10,7 @@
 Model::Model(std::vector<Mesh> meshes) : meshes(std::move(meshes)) {
   ModelNode root;
 
-  root.modelTransform = glm::mat4{1.0f};
+  root.localTransform = glm::mat4{1.0f};
 
   root.meshIndices.reserve(meshes.size());
 
@@ -67,33 +67,37 @@ void Model::loadModel(
 }
 
 NodeId Model::processNode(
-  const aiNode *node, const aiScene *scene, const glm::mat4 &transform
+  const aiNode *node, const aiScene *scene, std::optional<NodeId> parent
 ) {
+  NodeId id = static_cast<NodeId>(nodes.size());
+
   ModelNode modelNode;
+
+  modelNode.name = node->mName.C_Str();
+  modelNode.localTransform = Model::toGlmMat4(node->mTransformation);
+  modelNode.parent = parent;
+
   modelNode.meshIndices.reserve(node->mNumMeshes);
   modelNode.children.reserve(node->mNumChildren);
+
   for (unsigned int i = 0; i < node->mNumMeshes; i++) {
     const unsigned int meshIndex = node->mMeshes[i];
     const aiMesh *mesh = scene->mMeshes[meshIndex];
 
+    modelNode.meshIndices.push_back(meshes.size());
     meshes.push_back(processMesh(mesh, scene));
-    modelNode.meshIndices.push_back(meshes.size() - 1);
   }
-  modelNode.name = node->mName.C_Str();
-
-  modelNode.modelTransform =
-    transform * Model::toGlmMat4(node->mTransformation);
-
-  for (unsigned int i = 0; i < node->mNumChildren; i++) {
-    modelNode.children.push_back(
-      processNode(node->mChildren[i], scene, modelNode.modelTransform)
-    );
-  }
-
-  NodeId id = static_cast<NodeId>(nodes.size());
-  nodesByName.emplace(modelNode.name, id);
 
   nodes.push_back(modelNode);
+
+  nodesByName.emplace(modelNode.name, id);
+
+  for (unsigned int i = 0; i < node->mNumChildren; i++) {
+    NodeId childId = processNode(node->mChildren[i], scene, id);
+
+    nodes[id].children.push_back(childId);
+  }
+
   return id;
 }
 
@@ -152,11 +156,12 @@ Mesh Model::processMesh(const aiMesh *mesh, const aiScene *scene) {
 void Model::drawNode(
   const NodeId &nodeId,
   Shader &shader,
-  const glm::mat4 &transform,
+  const glm::mat4 &parentTransform,
   std::optional<unsigned int> lastUsedMaterialIndex
 ) {
   ModelNode node = nodes[nodeId];
-  shader.setMat4("model", transform * node.modelTransform);
+  glm::mat4 worldTransform = parentTransform * node.localTransform;
+  shader.setMat4("model", worldTransform);
 
   for (auto idx : node.meshIndices) {
     const unsigned int materialIndex = meshes[idx].getMaterialIndex();
@@ -169,7 +174,7 @@ void Model::drawNode(
   }
 
   for (const auto &n : node.children)
-    drawNode(n, shader, transform);
+    drawNode(n, shader, worldTransform, lastUsedMaterialIndex);
 }
 
 glm::mat4 Model::toGlmMat4(const aiMatrix4x4t<float> &m) {

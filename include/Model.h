@@ -19,11 +19,20 @@ enum class MaterialImportMode { Auto, PBR, Phong };
 
 using NodeId = uint32_t;
 
+struct Transform {
+    glm::mat4 position{0.0f};
+    glm::quat rotation{1.0f, 0.0f, 0.0f, 0.0f};
+    glm::mat4 scale{1.0f};
+
+    glm::mat4 getMatrix() const {}
+};
+
 struct ModelNode {
     std::string name;
 
-    glm::mat4 modelTransform;
+    glm::mat4 localTransform{1.0f};
 
+    std::optional<NodeId> parent;
     std::vector<size_t> meshIndices;
     std::vector<NodeId> children;
 };
@@ -65,7 +74,7 @@ class Model {
     NodeId processNode(
       const aiNode *node,
       const aiScene *scene,
-      const glm::mat4 &transform = {1.0f}
+      std::optional<NodeId> parent = std::nullopt
     );
     Mesh processMesh(const aiMesh *mesh, const aiScene *scene);
 
@@ -110,7 +119,7 @@ class Model {
     void drawNode(
       const NodeId &nodeId,
       Shader &shader,
-      const glm::mat4 &transform = glm::mat4{1.0f},
+      const glm::mat4 &parentTransform = glm::mat4{1.0f},
       std::optional<unsigned int> lastUsedMaterialIndex = std::nullopt
     );
     static glm::mat4 toGlmMat4(const aiMatrix4x4t<float> &m);

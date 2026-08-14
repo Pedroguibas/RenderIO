@@ -59,9 +59,9 @@ int main() {
   }
 
   glEnable(GL_DEPTH_TEST);
-  // glEnable(GL_CULL_FACE);
-  // glCullFace(GL_BACK);
-  // glFrontFace(GL_CCW);
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
+  glFrontFace(GL_CCW);
 
   glViewport(0, 0, 1280, 720);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -165,7 +165,7 @@ int main() {
     {0, 1, 2, 2, 1, 3}
   );
 
-  Model miku("models/miku/source/miku.gltf");
+  Model miku("models/miku/scene.gltf");
 
   float deltaTime = glfwGetTime();
 
