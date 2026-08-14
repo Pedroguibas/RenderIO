@@ -8,6 +8,8 @@
 #include <stdexcept>
 
 Model::Model(std::vector<Mesh> meshes) : meshes(std::move(meshes)) {
+  ModelNode root;
+
   root.modelTransform = glm::mat4{1.0f};
 
   root.meshIndices.reserve(meshes.size());
@@ -15,6 +17,7 @@ Model::Model(std::vector<Mesh> meshes) : meshes(std::move(meshes)) {
   for (std::size_t i = 0; i < meshes.size(); i++) {
     root.meshIndices.push_back(static_cast<unsigned int>(i));
   }
+  nodes.push_back(root);
 }
 
 Model::Model(
@@ -32,7 +35,7 @@ std::vector<Mesh> &Model::getMeshes() noexcept {
 }
 
 void Model::draw(Shader &shader, const glm::mat4 &transform) {
-  drawNode(root, shader, transform);
+  drawNode(rootNode, shader, transform);
 }
 
 void Model::loadModel(
@@ -59,11 +62,11 @@ void Model::loadModel(
   directory = path.parent_path();
 
   meshes.clear();
-  root = processNode(scene->mRootNode, scene);
+  rootNode = processNode(scene->mRootNode, scene);
   processMaterials(scene);
 }
 
-ModelNode Model::processNode(
+NodeId Model::processNode(
   const aiNode *node, const aiScene *scene, const glm::mat4 &transform
 ) {
   ModelNode modelNode;
@@ -76,6 +79,7 @@ ModelNode Model::processNode(
     meshes.push_back(processMesh(mesh, scene));
     modelNode.meshIndices.push_back(meshes.size() - 1);
   }
+  modelNode.name = node->mName.C_Str();
 
   modelNode.modelTransform =
     transform * Model::toGlmMat4(node->mTransformation);
@@ -86,7 +90,11 @@ ModelNode Model::processNode(
     );
   }
 
-  return modelNode;
+  NodeId id = static_cast<NodeId>(nodes.size());
+  nodesByName.emplace(modelNode.name, id);
+
+  nodes.push_back(modelNode);
+  return id;
 }
 
 Mesh Model::processMesh(const aiMesh *mesh, const aiScene *scene) {
@@ -142,11 +150,12 @@ Mesh Model::processMesh(const aiMesh *mesh, const aiScene *scene) {
 }
 
 void Model::drawNode(
-  const ModelNode &node,
+  const NodeId &nodeId,
   Shader &shader,
   const glm::mat4 &transform,
   std::optional<unsigned int> lastUsedMaterialIndex
 ) {
+  ModelNode node = nodes[nodeId];
   shader.setMat4("model", transform * node.modelTransform);
 
   for (auto idx : node.meshIndices) {
@@ -414,4 +423,11 @@ std::shared_ptr<Texture> Model::processTexture(
   loadedTextures.emplace(fullPath, texture);
 
   return texture;
+}
+
+ModelNode &Model::getNode(const std::string &name) {
+  return nodes.at(nodesByName[name]);
+}
+ModelNode &Model::getNode(NodeId id) {
+  return nodes.at(id);
 }
