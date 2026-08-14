@@ -54,8 +54,8 @@ class Model {
 
     void draw(Shader &shader, const glm::mat4 &transform = glm::mat4{1.0f});
 
-    ModelNode *getNode(const std::string &name);
-    ModelNode *getNode(NodeId id);
+    ModelNode &getNode(const std::string &name);
+    ModelNode &getNode(NodeId id);
 
   private:
     void loadModel(

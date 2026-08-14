@@ -425,9 +425,9 @@ std::shared_ptr<Texture> Model::processTexture(
   return texture;
 }
 
-ModelNode *Model::getNode(const std::string &name) {
-  return &nodes.at(nodesByName[name]);
+ModelNode &Model::getNode(const std::string &name) {
+  return nodes.at(nodesByName[name]);
 }
-ModelNode *Model::getNode(NodeId id) {
-  return &nodes.at(id);
+ModelNode &Model::getNode(NodeId id) {
+  return nodes.at(id);
 }
