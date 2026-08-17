@@ -4,6 +4,7 @@
 #include "Mesh.h"
 #include "Shader.h"
 #include "Texture.h"
+#include "ModelNode.h"
 
 #include <filesystem>
 #include <vector>
@@ -13,29 +14,8 @@
 #include <glm/glm.hpp>
 #include <unordered_map>
 #include <memory>
-#include <optional>
 
 enum class MaterialImportMode { Auto, PBR, Phong };
-
-using NodeId = uint32_t;
-
-struct Transform {
-    glm::mat4 position{0.0f};
-    glm::quat rotation{1.0f, 0.0f, 0.0f, 0.0f};
-    glm::mat4 scale{1.0f};
-
-    glm::mat4 getMatrix() const {}
-};
-
-struct ModelNode {
-    std::string name;
-
-    glm::mat4 localTransform{1.0f};
-
-    std::optional<NodeId> parent;
-    std::vector<size_t> meshIndices;
-    std::vector<NodeId> children;
-};
 
 class Model {
   private:
@@ -47,6 +27,7 @@ class Model {
     std::vector<ModelNode> nodes;
     std::unordered_map<std::string, NodeId> nodesByName;
     NodeId rootNode;
+    Transform transform;
 
   public:
     Model(std::vector<Mesh> meshes);
@@ -61,10 +42,24 @@ class Model {
     const std::vector<Material> &getMaterials() const noexcept;
     std::vector<Material> &getMaterials() noexcept;
 
-    void draw(Shader &shader, const glm::mat4 &transform = glm::mat4{1.0f});
+    void draw(Shader &shader);
 
     ModelNode &getNode(const std::string &name);
     ModelNode &getNode(NodeId id);
+
+    void translate(const glm::vec3 &offset);
+    void rotateX(float rad);
+    void rotateY(float rad);
+    void rotateZ(float rad);
+    void scale(const glm::vec3 &scale);
+    void resetTranslation(const glm::vec3 &offset = glm::vec3{0.0f});
+    void resetRotateX(float rad = 0);
+    void resetRotateY(float rad = 0);
+    void resetRotateZ(float rad = 0);
+    void resetRotation();
+    void resetScale(const glm::vec3 &scale = glm::vec3{1.0f});
+
+    glm::mat4 getTransformMatrix() const;
 
   private:
     void loadModel(

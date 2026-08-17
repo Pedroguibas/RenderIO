@@ -8,15 +8,15 @@
 #include <stdexcept>
 
 Model::Model(std::vector<Mesh> meshes) : meshes(std::move(meshes)) {
-  ModelNode root;
+  ModelNode root("root");
 
-  root.localTransform = glm::mat4{1.0f};
+  root.reserveMeshIndices(meshes.size());
 
-  root.meshIndices.reserve(meshes.size());
-
+  rootNode = nodes.size();
   for (std::size_t i = 0; i < meshes.size(); i++) {
-    root.meshIndices.push_back(static_cast<unsigned int>(i));
+    root.pushMeshIndice(static_cast<unsigned int>(i));
   }
+
   nodes.push_back(root);
 }
 
@@ -34,8 +34,8 @@ std::vector<Mesh> &Model::getMeshes() noexcept {
   return meshes;
 }
 
-void Model::draw(Shader &shader, const glm::mat4 &transform) {
-  drawNode(rootNode, shader, transform);
+void Model::draw(Shader &shader) {
+  drawNode(rootNode, shader, getTransformMatrix());
 }
 
 void Model::loadModel(
@@ -71,31 +71,31 @@ NodeId Model::processNode(
 ) {
   NodeId id = static_cast<NodeId>(nodes.size());
 
-  ModelNode modelNode;
+  ModelNode modelNode(
+    node->mName.C_Str(), Model::toGlmMat4(node->mTransformation)
+  );
 
-  modelNode.name = node->mName.C_Str();
-  modelNode.localTransform = Model::toGlmMat4(node->mTransformation);
-  modelNode.parent = parent;
+  modelNode.setParent(parent);
 
-  modelNode.meshIndices.reserve(node->mNumMeshes);
-  modelNode.children.reserve(node->mNumChildren);
+  modelNode.reserveMeshIndices(node->mNumMeshes);
+  modelNode.reserveChildren(node->mNumChildren);
 
   for (unsigned int i = 0; i < node->mNumMeshes; i++) {
     const unsigned int meshIndex = node->mMeshes[i];
     const aiMesh *mesh = scene->mMeshes[meshIndex];
 
-    modelNode.meshIndices.push_back(meshes.size());
+    modelNode.pushMeshIndice(meshes.size());
     meshes.push_back(processMesh(mesh, scene));
   }
 
   nodes.push_back(modelNode);
 
-  nodesByName.emplace(modelNode.name, id);
+  nodesByName.emplace(modelNode.getName(), id);
 
   for (unsigned int i = 0; i < node->mNumChildren; i++) {
     NodeId childId = processNode(node->mChildren[i], scene, id);
 
-    nodes[id].children.push_back(childId);
+    nodes[id].pushChild(childId);
   }
 
   return id;
@@ -160,10 +160,10 @@ void Model::drawNode(
   std::optional<unsigned int> lastUsedMaterialIndex
 ) {
   ModelNode node = nodes[nodeId];
-  glm::mat4 worldTransform = parentTransform * node.localTransform;
+  glm::mat4 worldTransform = parentTransform * node.getMatrix();
   shader.setMat4("model", worldTransform);
 
-  for (auto idx : node.meshIndices) {
+  for (auto idx : node.getMeshIndices()) {
     const unsigned int materialIndex = meshes[idx].getMaterialIndex();
     if (!lastUsedMaterialIndex || materialIndex != *lastUsedMaterialIndex) {
       materials[materialIndex].use(shader);
@@ -173,7 +173,7 @@ void Model::drawNode(
     meshes[idx].draw();
   }
 
-  for (const auto &n : node.children)
+  for (const auto &n : node.getChildren())
     drawNode(n, shader, worldTransform, lastUsedMaterialIndex);
 }
 
@@ -431,8 +431,56 @@ std::shared_ptr<Texture> Model::processTexture(
 }
 
 ModelNode &Model::getNode(const std::string &name) {
-  return nodes.at(nodesByName[name]);
+  try {
+    return nodes.at(nodesByName.at(name));
+  } catch (const std::exception &e) {
+    return nodes[rootNode];
+  }
 }
 ModelNode &Model::getNode(NodeId id) {
   return nodes.at(id);
+}
+
+void Model::translate(const glm::vec3 &offset) {
+  transform.translation += offset;
+}
+void Model::rotateX(float rad) {
+  transform.rotation *= glm::angleAxis(rad, glm::vec3{1.0f, 0.0f, 0.0f});
+}
+void Model::rotateY(float rad) {
+  transform.rotation *= glm::angleAxis(rad, glm::vec3{0.0f, 1.0f, 0.0f});
+}
+void Model::rotateZ(float rad) {
+  transform.rotation *= glm::angleAxis(rad, glm::vec3{0.0f, 0.0f, 1.0f});
+}
+void Model::scale(const glm::vec3 &scale) {
+  transform.scale *= scale;
+}
+void Model::resetTranslation(const glm::vec3 &offset) {
+  transform.translation = offset;
+}
+void Model::resetRotateX(float rad) {
+  transform.rotation = glm::angleAxis(rad, glm::vec3{1.0f, 0.0f, 0.0f});
+}
+void Model::resetRotateY(float rad) {
+  transform.rotation = glm::angleAxis(rad, glm::vec3{0.0f, 1.0f, 0.0f});
+}
+void Model::resetRotateZ(float rad) {
+  transform.rotation = glm::angleAxis(rad, glm::vec3{0.0f, 0.0f, 1.0f});
+}
+void Model::resetRotation() {
+  transform.rotation = glm::quat{1.0f, 0.0f, 0.0f, 0.0f};
+}
+void Model::resetScale(const glm::vec3 &scale) {
+  transform.scale = scale;
+}
+
+glm::mat4 Model::getTransformMatrix() const {
+  const glm::mat4 T = glm::translate(glm::mat4{1.0f}, transform.translation);
+
+  const glm::mat4 R = glm::mat4_cast(transform.rotation);
+
+  const glm::mat4 S = glm::scale(glm::mat4{1.0f}, transform.scale);
+
+  return T * R * S;
 }
