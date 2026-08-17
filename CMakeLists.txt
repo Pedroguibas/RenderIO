@@ -40,6 +40,7 @@ add_executable(renderIO
 	src/Material.cpp
 	src/Model.cpp
 	src/inputHandler.cpp
+	src/ModelNode.cpp
 )
 
 target_include_directories(renderIO PRIVATE

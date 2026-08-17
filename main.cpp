@@ -59,9 +59,9 @@ int main() {
   }
 
   glEnable(GL_DEPTH_TEST);
-  // glEnable(GL_CULL_FACE);
-  // glCullFace(GL_BACK);
-  // glFrontFace(GL_CCW);
+  glEnable(GL_CULL_FACE);
+  glCullFace(GL_BACK);
+  glFrontFace(GL_CCW);
 
   glViewport(0, 0, 1280, 720);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -165,7 +165,12 @@ int main() {
     {0, 1, 2, 2, 1, 3}
   );
 
-  Model miku("models/miku/source/miku.gltf");
+  Model miku("models/miku/scene.gltf");
+  miku.rotateX(glm::radians(90.0f));
+  miku.scale(glm::vec3{0.05f});
+  miku.translate(glm::vec3{0.0f, -5.0f, 0.0f});
+
+  auto &node = miku.getNode("Object_10");
 
   float deltaTime = glfwGetTime();
 
@@ -240,9 +245,7 @@ int main() {
     // lamp.draw(*shader);
 
     // shader->setMat4("model", model);
-    model = glm::translate(glm::mat4(1.0f), {1.7f, 0.0f, 0.0f});
-    model = glm::scale(model, glm::vec3(0.8));
-    miku.draw(*shader, model);
+    miku.draw(*shader);
 
     glfwSwapBuffers(window);
   }
