@@ -16,39 +16,27 @@ Texture::Texture(const std::filesystem::path &path) {
       std::string("Unable to locate texture:\n") + path.string()
     );
 
-  GLenum format;
-  switch (channels) {
-  case 1:
-    format = GL_RED;
-    break;
+  GLenum format = formatFromChannels(channels);
 
-  case 3:
-    format = GL_RGB;
-    break;
-
-  case 4:
-    format = GL_RGBA;
-    break;
-
-  default:
-    throw std::invalid_argument(
-      std::string("Unsuported texture format:\n" + path.string())
-    );
-  }
-
-  glGenTextures(1, &id);
-
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, id);
-
-  glTexImage2D(
-    GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data
-  );
-
-  setDefaultParams();
-  glGenerateMipmap(GL_TEXTURE_2D);
+  create(data, format, format);
 
   stbi_image_free(data);
+}
+Texture::Texture(
+  const void *data, int width, int height, GLenum format, GLenum internalFormat
+)
+: width(width),
+  height(height) {
+
+  create(data, format, internalFormat);
+}
+Texture::Texture(const unsigned char *data, int width, int height, int channels)
+: width(width),
+  height(height) {
+
+  GLenum format = formatFromChannels(channels);
+
+  create(data, format, format);
 }
 Texture::~Texture() {
   glDeleteTextures(1, &id);
@@ -70,4 +58,44 @@ void Texture::bind(GLuint unit) const {
 }
 void Texture::unbind() const {
   glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void Texture::create(const void *data, GLenum format, GLenum internalFormat) {
+  glGenTextures(1, &id);
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, id);
+
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+  glTexImage2D(
+    GL_TEXTURE_2D,
+    0,
+    internalFormat,
+    width,
+    height,
+    0,
+    format,
+    GL_UNSIGNED_BYTE,
+    data
+  );
+
+  glGenerateMipmap(GL_TEXTURE_2D);
+  setDefaultParams();
+}
+
+GLenum Texture::formatFromChannels(int channels) {
+  switch (channels) {
+  case 1:
+    return GL_RED;
+
+  case 3:
+    return GL_RGB;
+
+  case 4:
+    return GL_RGBA;
+
+  default:
+    throw std::invalid_argument(std::string("Invalid Texture channel count"));
+  }
 }

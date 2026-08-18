@@ -118,4 +118,6 @@ class Model {
       std::optional<unsigned int> lastUsedMaterialIndex = std::nullopt
     );
     static glm::mat4 toGlmMat4(const aiMatrix4x4t<float> &m);
+
+    std::shared_ptr<Texture> processEmbedded(const aiTexture *texture);
 };
