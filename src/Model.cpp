@@ -19,6 +19,7 @@ Model::Model(std::vector<Mesh> meshes) : meshes(std::move(meshes)) {
   }
 
   nodes.push_back(root);
+  computeBounds();
 }
 
 Model::Model(
@@ -65,6 +66,8 @@ void Model::loadModel(
   meshes.clear();
   rootNode = processNode(scene->mRootNode, scene);
   processMaterials(scene);
+
+  computeBounds();
 }
 
 NodeId Model::processNode(
@@ -525,5 +528,42 @@ glm::mat4 Model::getTransformMatrix() const {
 
   const glm::mat4 S = glm::scale(glm::mat4{1.0f}, transform.scale);
 
-  return T * R * S;
+  const glm::mat4 Recenter =
+    glm::translate(glm::mat4{1.0f}, -bounds.pivotOffset);
+
+  return T * R * S * Recenter;
+}
+
+void Model::computeBounds() {
+  bounds.min = glm::vec3{std::numeric_limits<float>::max()};
+  bounds.max = glm::vec3{std::numeric_limits<float>::lowest()};
+
+  accumulateBounds(rootNode, glm::mat4{1.0f});
+
+  bounds.pivotOffset = (bounds.min + bounds.max) * 0.5f;
+}
+void Model::accumulateBounds(NodeId id, const glm::mat4 &parentTransform) {
+  const ModelNode &node = nodes[id];
+
+  glm::mat4 worldTransform = parentTransform * node.getMatrix();
+
+  for (auto idx : node.getMeshIndices()) {
+    for (const auto &vertex : meshes[idx].getVertices()) {
+      glm::vec3 worldPos =
+        glm::vec3{worldTransform * glm::vec4(vertex.getPosition(), 1.0f)};
+
+      bounds.min = glm::min(bounds.min, worldPos);
+      bounds.max = glm::max(bounds.max, worldPos);
+    }
+  }
+
+  for (auto child : node.getChildren())
+    accumulateBounds(child, worldTransform);
+}
+
+const Boundries &Model::getBounds() {
+  return bounds;
+}
+const Transform &Model::getTransform() {
+  return transform;
 }
