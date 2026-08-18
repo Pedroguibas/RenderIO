@@ -17,6 +17,12 @@
 
 enum class MaterialImportMode { Auto, PBR, Phong };
 
+struct Boundries {
+    glm::vec3 min{0.0f};
+    glm::vec3 max{0.0f};
+    glm::vec3 pivotOffset{0.0f};
+};
+
 class Model {
   private:
     std::unordered_map<std::filesystem::path, std::shared_ptr<Texture>>
@@ -28,6 +34,7 @@ class Model {
     std::unordered_map<std::string, NodeId> nodesByName;
     NodeId rootNode;
     Transform transform;
+    Boundries bounds = {};
 
   public:
     Model(std::vector<Mesh> meshes);
@@ -58,8 +65,11 @@ class Model {
     void resetRotateZ(float rad = 0);
     void resetRotation();
     void resetScale(const glm::vec3 &scale = glm::vec3{1.0f});
+    const Transform &getTransform();
 
     glm::mat4 getTransformMatrix() const;
+
+    const Boundries &getBounds();
 
   private:
     void loadModel(
@@ -120,4 +130,7 @@ class Model {
     static glm::mat4 toGlmMat4(const aiMatrix4x4t<float> &m);
 
     std::shared_ptr<Texture> processEmbedded(const aiTexture *texture);
+
+    void computeBounds();
+    void accumulateBounds(NodeId id, const glm::mat4 &parentTransform);
 };
