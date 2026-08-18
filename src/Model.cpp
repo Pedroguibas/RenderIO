@@ -6,6 +6,7 @@
 #include <assimp/postprocess.h>
 #include <glm/glm.hpp>
 #include <stdexcept>
+#include <stb_image.h>
 
 Model::Model(std::vector<Mesh> meshes) : meshes(std::move(meshes)) {
   ModelNode root("root");
@@ -407,10 +408,20 @@ std::shared_ptr<Texture> Model::processTexture(
   if (material->GetTexture(type, 0, &texPath) != AI_SUCCESS)
     return 0;
 
-  const char *path = texPath.C_Str();
+  std::string path = texPath.C_Str();
 
-  if (const aiTexture *embedded = scene->GetEmbeddedTexture(path)) {
-    throw std::runtime_error("Embedded Textures are not supported yet");
+  if (const aiTexture *embedded = scene->GetEmbeddedTexture(path.c_str())) {
+    std::string key = "embedded:" + path;
+
+    auto it = loadedTextures.find(key);
+    if (it != loadedTextures.end())
+      return it->second;
+
+    auto texture = processEmbedded(embedded);
+
+    loadedTextures.emplace(key, texture);
+
+    return texture;
   }
 
   std::filesystem::path relativePath(path);
@@ -428,6 +439,38 @@ std::shared_ptr<Texture> Model::processTexture(
   loadedTextures.emplace(fullPath, texture);
 
   return texture;
+}
+
+std::shared_ptr<Texture> Model::processEmbedded(const aiTexture *embedded) {
+  if (embedded->mHeight == 0) {
+    int width;
+    int height;
+    int channels;
+
+    const auto *buffer =
+      reinterpret_cast<const unsigned char *>(embedded->pcData);
+
+    unsigned char *data = stbi_load_from_memory(
+      buffer, static_cast<int>(embedded->mWidth), &width, &height, &channels, 0
+    );
+
+    if (!data) {
+      throw std::runtime_error(
+        std::string("Failed to load embedded texture:\n") +
+        stbi_failure_reason()
+      );
+    }
+
+    auto texture = std::make_shared<Texture>(data, width, height, channels);
+
+    stbi_image_free(data);
+
+    return texture;
+  }
+
+  return std::make_shared<Texture>(
+    embedded->pcData, embedded->mWidth, embedded->mHeight, GL_BGRA, GL_RGBA
+  );
 }
 
 ModelNode &Model::getNode(const std::string &name) {

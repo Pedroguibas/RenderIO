@@ -165,12 +165,15 @@ int main() {
     {0, 1, 2, 2, 1, 3}
   );
 
-  Model miku("models/miku/scene.gltf");
-  miku.rotateX(glm::radians(90.0f));
-  miku.scale(glm::vec3{0.05f});
-  miku.translate(glm::vec3{0.0f, -5.0f, 0.0f});
+  // Model miku("models/miku/scene.gltf");
+  Model miku("models/miku_v6/source/miku.gltf");
+  // miku.rotateX(glm::radians(90.0f));
+  miku.resetTranslation();
+  miku.scale(glm::vec3{30.0f});
+  // miku.translate(glm::vec3{0.0f, -5.0f, 0.0f});
 
-  auto &node = miku.getNode("Object_10");
+  auto &node = miku.getNode("Object_214");
+  // node.scale(glm::vec3{2.0f});
 
   float deltaTime = glfwGetTime();
 
