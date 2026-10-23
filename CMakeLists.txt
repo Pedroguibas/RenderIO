@@ -12,6 +12,8 @@ set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_BUILD_SAMPLES OFF CACHE BOOL "" FORCE)
 set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_ZLIB ON CACHE BOOL "" FORCE)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/usr/include/minizip")
 
 add_subdirectory(external/assimp)
 
@@ -71,10 +73,4 @@ add_custom_command(TARGET renderIO POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_SOURCE_DIR}/models
         $<TARGET_FILE_DIR:renderIO>/models
-)
-
-target_link_options(renderIO PRIVATE
-	-static
-	-static-libgcc
-	-static-libstdc++
 )

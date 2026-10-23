@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <glad/gl.h>
-#include <glfw/glfw3.h>
+#include <GLFW/glfw3.h>
 #include <stdexcept>
 #include <vector>
 #include <optional>
@@ -63,7 +63,9 @@ int main() {
   glCullFace(GL_BACK);
   glFrontFace(GL_CCW);
 
-  glViewport(0, 0, 1280, 720);
+  int fb_width, fb_height;
+  glfwGetFramebufferSize(window, &fb_width, &fb_height);
+  glViewport(0, 0, fb_width, fb_height);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
   glClearColor(0.5f, 0.7f, 1.0f, 1.0f);
