@@ -126,7 +126,7 @@ void Mesh::draw() const {
   glBindVertexArray(0);
 }
 
-const vector<Vertex> &Mesh::getVertices() const {
+const vector<Vertex> &Mesh::getVertices() const noexcept {
   return vertices;
 }
 

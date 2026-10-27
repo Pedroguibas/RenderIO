@@ -96,6 +96,7 @@ out vec4 FragColor;
 
 vec3 getNormal() {
   vec3 N = normalize(vNormal);
+  if (!gl_FrontFacing) N = -N;
 
   if (!material.normal.mapEnabled)
     return N;
@@ -259,13 +260,17 @@ vec3 calcPointLight(
 
 void main() {
   vec3 baseColor = material.albedo.color.rgb;
+  float alpha = material.albedo.color.a;
   float metallic = material.metallic.value;
   float roughness = material.roughness.value; 
   float ao = material.ao.value;
 
 
-  if (material.albedo.mapEnabled)
-    baseColor *= texture(material.albedo.texture, vUv).rgb;
+  if (material.albedo.mapEnabled) {
+    vec4 tex = texture(material.albedo.texture, vUv);
+    baseColor *= tex.rgb;
+    alpha *= tex.a;
+  }
 
   if (material.metallic.mapEnabled)
     metallic *= texture(material.metallic.texture, vUv).r;
@@ -290,5 +295,6 @@ void main() {
   vec3 ambient = ambientStrength * baseColor * ao;
   finalColor += ambient;
 
-  FragColor = vec4(finalColor, material.albedo.color.a);
+  if (alpha < 0.5) discard;
+  FragColor = vec4(finalColor, alpha);
 }

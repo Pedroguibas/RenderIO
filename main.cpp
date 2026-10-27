@@ -58,8 +58,10 @@ int main() {
     return -1;
   }
 
-  glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glCullFace(GL_BACK);
   glFrontFace(GL_CCW);
 
@@ -167,10 +169,10 @@ int main() {
     {0, 1, 2, 2, 1, 3}
   );
 
-  Model miku("models/miku/scene.gltf");
-  // Model miku("models/miku_v6/source/miku.gltf");
-  miku.scale(glm::vec3{0.05});
-  miku.rotateX(glm::radians(90.0f));
+  // Model miku("models/miku/scene.gltf");
+  Model miku("models/miku_v6/source/miku.gltf");
+  miku.scale(glm::vec3{3.0});
+  // miku.rotateX(glm::radians(90.0f));
   auto bounds = miku.getBounds();
   float halfHeight = (bounds.max.z - bounds.min.z) * 0.5f;
 

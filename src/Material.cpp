@@ -3,9 +3,12 @@
 #include <exception>
 
 Material::Material(
-  const ShaderOptions &shaderOptions, ShaderStructOptions shaderStruct
+  const ShaderOptions &shaderOptions,
+  ShaderStructOptions shaderStruct,
+  bool doubleSided
 )
-: shaderOptions(shaderOptions) {
+: shaderOptions(shaderOptions),
+  doubleSided(doubleSided) {
   bool isStructPBR =
     std::holds_alternative<PBRMaterialShaderStruct>(shaderStruct);
   bool pbr = std::holds_alternative<PBRShaderOptions>(shaderOptions);
@@ -20,16 +23,19 @@ Material::Material(
 }
 
 Material Material::createPBR(
-  const PBRShaderOptions &shaderOptions, PBRMaterialShaderStruct shaderStruct
+  const PBRShaderOptions &shaderOptions,
+  PBRMaterialShaderStruct shaderStruct,
+  bool doubleSided
 ) {
-  return Material(shaderOptions, std::move(shaderStruct));
+  return Material(shaderOptions, std::move(shaderStruct), doubleSided);
 }
 
 Material Material::createPhong(
   const PhongShaderOptions &shaderOptions,
-  PhongMaterialShaderStruct shaderStruct
+  PhongMaterialShaderStruct shaderStruct,
+  bool doubleSided
 ) {
-  return Material(shaderOptions, std::move(shaderStruct));
+  return Material(shaderOptions, std::move(shaderStruct), doubleSided);
 }
 
 const PBRShaderOptions &Material::getPBRShaderOptions() const {
@@ -135,7 +141,19 @@ void Material::setShaderStruct(ShaderStructOptions shaderStruct) {
   }
 }
 
+void Material::setDoubleSided(bool val) noexcept {
+  this->doubleSided = val;
+}
+
+bool Material::isDoubleSided() const noexcept {
+  return this->doubleSided;
+}
+
 void Material::use(Shader &shader) const {
+  if (this->doubleSided)
+    glEnable(GL_CULL_FACE);
+  else
+    glDisable(GL_CULL_FACE);
 
   if (std::holds_alternative<PhongShaderOptions>(shaderOptions)) {
     const auto &structVal = std::get<PhongMaterialShaderStruct>(shaderStruct);
