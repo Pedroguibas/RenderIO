@@ -105,19 +105,24 @@ class Material {
   private:
     ShaderOptions shaderOptions;
     ShaderStructOptions shaderStruct;
+    bool doubleSided = false;
 
     Material(
-      const ShaderOptions &shaderOptions, ShaderStructOptions shaderStruct
+      const ShaderOptions &shaderOptions,
+      ShaderStructOptions shaderStruct,
+      bool doubleSided
     );
 
   public:
     static Material createPBR(
       const PBRShaderOptions &shaderOptions,
-      PBRMaterialShaderStruct shaderStruct = {}
+      PBRMaterialShaderStruct shaderStruct = {},
+      bool doublesided = false
     );
     static Material createPhong(
       const PhongShaderOptions &shaderOptions,
-      PhongMaterialShaderStruct shaderStruct = {}
+      PhongMaterialShaderStruct shaderStruct = {},
+      bool doublesided = false
     );
 
     void setShaderStruct(ShaderStructOptions shaderStruct);
@@ -127,6 +132,9 @@ class Material {
 
     const PhongShaderOptions &getPhongShaderOptions() const;
     PhongShaderOptions &getPhongShaderOptions();
+
+    void setDoubleSided(bool val) noexcept;
+    bool isDoubleSided() const noexcept;
 
     void use(Shader &shader) const;
 };

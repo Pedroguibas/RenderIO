@@ -167,6 +167,10 @@ void Model::drawNode(
   glm::mat4 worldTransform = parentTransform * node.getMatrix();
   shader.setMat4("model", worldTransform);
 
+  glFrontFace(
+    glm::determinant(glm::mat3(worldTransform)) < 0.0 ? GL_CW : GL_CCW
+  );
+
   for (auto idx : node.getMeshIndices()) {
     const unsigned int materialIndex = meshes[idx].getMaterialIndex();
     if (!lastUsedMaterialIndex || materialIndex != *lastUsedMaterialIndex) {
@@ -176,6 +180,8 @@ void Model::drawNode(
 
     meshes[idx].draw();
   }
+
+  glFrontFace(GL_CCW);
 
   for (const auto &n : node.getChildren())
     drawNode(n, shader, worldTransform, lastUsedMaterialIndex);
@@ -244,7 +250,12 @@ bool Model::isPBRMaterial(const aiMaterial *material) {
 
 Material Model::processPBR(const aiMaterial *material, const aiScene *scene) {
   PBRShaderOptions options;
+  int twoSided;
+  bool doubleSided = false;
 
+  if (material->Get(AI_MATKEY_TWOSIDED, twoSided) == AI_SUCCESS) {
+    doubleSided = (twoSided != 0);
+  }
   processAlbedo(material, scene, options.albedo);
   processRoughness(material, scene, options.roughness);
   processMetallic(material, scene, options.metallic);
@@ -252,17 +263,23 @@ Material Model::processPBR(const aiMaterial *material, const aiScene *scene) {
   processNormal(material, scene, options.normal);
   processEmission(material, scene, options.emission);
 
-  return Material::createPBR(options);
+  return Material::createPBR(options, {}, doubleSided);
 }
 
 Material Model::processPhong(const aiMaterial *material, const aiScene *scene) {
   PhongShaderOptions options;
 
+  int twoSided;
+  bool doubleSided = false;
+
+  if (material->Get(AI_MATKEY_TWOSIDED, twoSided) == AI_SUCCESS) {
+    doubleSided = (twoSided != 0);
+  }
   processAlbedo(material, scene, options.albedo);
   processSpecularity(material, scene, options.specular);
   processEmission(material, scene, options.emission);
 
-  return Material::createPhong(options);
+  return Material::createPhong(options, {}, doubleSided);
 }
 
 void Model::processAlbedo(
